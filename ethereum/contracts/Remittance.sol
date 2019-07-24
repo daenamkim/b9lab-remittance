@@ -67,7 +67,7 @@ contract Remittance is Pausable {
         msg.sender.transfer(balances[key]);
         // Send value information of receiver
         bool ok = ExchangeShop(msg.sender).call(
-          abi.encodeWithSignature('updateBalance(address,uint)', receiver, balances[key])
+            abi.encodeWithSignature('updateBalance(address,uint)', receiver, balances[key])
         );
         require(ok, 'updateBalance should be called');
 
