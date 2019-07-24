@@ -1,6 +1,6 @@
 pragma solidity 0.5.10;
 
-import './Pausable.sol';
+import "./Pausable.sol";
 
 contract ExchangeShop {
     function updateBalance(address receiver, uint value) public;
@@ -13,8 +13,8 @@ contract Remittance is Pausable {
     string private _seed2;
 
     constructor (string memory seed1, string memory seed2) public {
-        require(bytes(seed1).length > 0 && bytes(seed2).length > 0, 'Seed must be passed');
-        require(keccak256(abi.encodePacked(seed1)) != keccak256(abi.encodePacked(seed2)), 'Each seed must be different');
+        require(bytes(seed1).length > 0 && bytes(seed2).length > 0, "Seed must be passed");
+        require(keccak256(abi.encodePacked(seed1)) != keccak256(abi.encodePacked(seed2)), "Each seed must be different");
         _seed1 = seed1;
         _seed2 = seed2;
     }
@@ -40,10 +40,10 @@ contract Remittance is Pausable {
     ) public payable onlyOwner whenNotPaused {
         bytes32 password1Check = keccak256(abi.encodePacked(password1));
         bytes32 password2Check = keccak256(abi.encodePacked(password2));
-        require(password1Check != password2Check, 'Each password should be different');
+        require(password1Check != password2Check, "Each password should be different");
 
         bytes32 key = _generateKey(_seed1, password1, _seed2, password2);
-        require(_passwordKeyStore[key] == 0, 'Same password pair should not be used');
+        require(_passwordKeyStore[key] == 0, "Same password pair should not be used");
 
         _passwordKeyStore[key] = now + expire;
         balances[key] += msg.value;
@@ -59,17 +59,17 @@ contract Remittance is Pausable {
 
     function remit(string memory password1, string memory password2, address receiver) public whenNotPaused returns (uint) {
         bytes32 key = _generateKey(_seed1, password1, _seed2, password2);
-        require(_passwordKeyStore[key] != 0, 'Key must be in the key store');
-        require(_passwordKeyStore[key] > now, 'Key should not be expired');
-        require(balances[key] > 0, 'Balance should be greater than 0');
-        require(receiver != address(0), 'Reciever shoudl have an address');
+        require(_passwordKeyStore[key] != 0, "Key must be in the key store");
+        require(_passwordKeyStore[key] > now, "Key should not be expired");
+        require(balances[key] > 0, "Balance should be greater than 0");
+        require(receiver != address(0), "Reciever shoudl have an address");
 
         msg.sender.transfer(balances[key]);
         // Send value information of receiver
         bool ok = ExchangeShop(msg.sender).call(
-            abi.encodeWithSignature('updateBalance(address,uint)', receiver, balances[key])
+            abi.encodeWithSignature("updateBalance(address,uint)", receiver, balances[key])
         );
-        require(ok, 'updateBalance should be called');
+        require(ok, "updateBalance should be called");
 
         balances[key] = 0;
         _passwordKeyStore[key] = 0;

@@ -1,6 +1,6 @@
 pragma solidity 0.5.10;
 
-import './Ownable.sol';
+import "./Ownable.sol";
 
 contract Pausable is Ownable {
     bool private _paused = false;
@@ -9,13 +9,13 @@ contract Pausable is Ownable {
     event LogUnpaused(address owner);
 
     modifier whenNotPaused() {
-        require(!_paused, 'Should not be paused');
+        require(!_paused, "Should not be paused");
 
         _;
     }
 
     modifier whenPaused() {
-        require(_paused, 'Should be paused');
+        require(_paused, "Should be paused");
 
         _;
     }
