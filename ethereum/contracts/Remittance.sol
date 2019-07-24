@@ -1,91 +1,66 @@
 pragma solidity 0.5.10;
 
 import "./Pausable.sol";
-
-contract ExchangeShop {
-    function updateBalance(address receiver, uint value) public;
-}
+import "./SafeMath.sol";
 
 contract Remittance is Pausable {
-    mapping(bytes32 => uint) private _passwordKeyStore;
-    mapping(bytes32 => uint) public balances;
-    string private _seed1;
-    string private _seed2;
+    using SafeMath for uint256;
 
-    constructor (string memory seed1, string memory seed2) public {
-        require(bytes(seed1).length > 0 && bytes(seed2).length > 0, "Seed must be passed");
-        require(keccak256(abi.encodePacked(seed1)) != keccak256(abi.encodePacked(seed2)), "Each seed must be different");
-        _seed1 = seed1;
-        _seed2 = seed2;
+    mapping (address => mapping (bytes32 => uint)) public balances;
+    mapping (address => mapping (bytes32 => bool)) public notifications;
+
+    event LogRemit(address indexed sender, uint value);
+    event LogWithdrawed(address indexed to);
+
+    function generateHash(address to, string memory secretTo, string memory secretExchangeShop) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked(to, secretTo, secretExchangeShop));
     }
 
-    event LogRemit(address indexed sender);
-    event LogWithdrawed(address indexed receiver);
+    function checkHash(address to, string memory secretTo, string memory secretExchangeShop, bytes32 hash) public pure returns (bool) {
+        if (generateHash(to, secretTo, secretExchangeShop) == hash) {
+            return true;
+        }
 
-    function _generateKey(
-        string memory seed1,
-        string memory password1,
-        string memory seed2,
-        string memory password2
-    ) private view returns (bytes32) {
-        bytes32 password1Encoded = keccak256(abi.encodePacked(this, seed1, password1));
-        bytes32 password2Encoded = keccak256(abi.encodePacked(this, seed2, password2));
-        return keccak256(abi.encodePacked(this, password1Encoded, password2Encoded));
+        return false;
     }
 
-    function deposit(
-        string memory password1,
-        string memory password2,
-        uint expire
-    ) public payable onlyOwner whenNotPaused {
-        bytes32 password1Check = keccak256(abi.encodePacked(password1));
-        bytes32 password2Check = keccak256(abi.encodePacked(password2));
-        require(password1Check != password2Check, "Each password should be different");
+    function deposit(address to, bytes32 hash) public onlyOwner whenNotPaused payable returns (bool) {
+        require(msg.value > 0, "Value must be bigger than 0");
+        require(hash != bytes32(0), "Hash must be valid");
+        require(to != address(0), "Address must be valid");
 
-        bytes32 key = _generateKey(_seed1, password1, _seed2, password2);
-        require(_passwordKeyStore[key] == 0, "Same password pair should not be used");
+        balances[to][hash] = balances[to][hash].add(msg.value);
 
-        _passwordKeyStore[key] = now + expire;
-        balances[key] += msg.value;
+        return true;
     }
 
-    function checkKey(
-        string memory password1,
-        string memory password2
-    ) public onlyOwner view returns (uint, uint, bytes32) {
-        bytes32 key = _generateKey(_seed1, password1, _seed2, password2);
-        return (_passwordKeyStore[key], now, key);
+    function remit(address to, string calldata secretTo, string calldata secretExchangeShop) external whenNotPaused returns (bool) {
+        bytes32 hash = generateHash(to, secretTo, secretExchangeShop);
+        require(to != address(0), "Address must be valid");
+        require(checkHash(to, secretTo, secretExchangeShop, hash), "Secrets must be valid");
+
+        uint value = balances[to][hash];
+        require(value > 0, "Balance must be bigger than 0");
+
+        balances[to][hash] = 0;
+        // TODO: set gas?
+        (bool ok,) = msg.sender.call.value(value)(abi.encodeWithSignature("deposit(address)", to));
+        require(ok, "Deposit to Exchange Shop must be successful");
+
+        emit LogRemit(msg.sender, value);
+        notifications[to][generateHash(to, secretTo, "")] = false;
+
+        return true;
     }
 
-    function remit(string memory password1, string memory password2, address receiver) public whenNotPaused returns (uint) {
-        bytes32 key = _generateKey(_seed1, password1, _seed2, password2);
-        require(_passwordKeyStore[key] != 0, "Key must be in the key store");
-        require(_passwordKeyStore[key] > now, "Key should not be expired");
-        require(balances[key] > 0, "Balance should be greater than 0");
-        require(receiver != address(0), "Reciever shoudl have an address");
+    function withdrawedFromExchangeShop(address to, string calldata secretTo) external returns (bool) {
+        bytes32 hash = generateHash(to, secretTo, "");
+        require(notifications[to][hash], "Notfication doesn't exist");
 
-        msg.sender.transfer(balances[key]);
-        // Send value information of receiver
-        bool ok = ExchangeShop(msg.sender).call(
-            abi.encodeWithSignature("updateBalance(address,uint)", receiver, balances[key])
-        );
-        require(ok, "updateBalance should be called");
+        notifications[to][hash] = false;
+        emit LogWithdrawed(to);
 
-        balances[key] = 0;
-        _passwordKeyStore[key] = 0;
-        emit LogRemit(msg.sender);
+        return true;
     }
 
-    function withdrawed(address receiver) external {
-        emit LogWithdrawed(receiver);
-    }
-
-    function setSeeds(string memory seed1, string memory seed2) public onlyOwner whenNotPaused {
-        _seed1 = seed1;
-        _seed2 = seed2;
-    }
-
-    function getSeeds() public onlyOwner view returns (string memory, string memory) {
-        return (_seed1, _seed2);
-    }
 }
