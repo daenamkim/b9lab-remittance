@@ -22,16 +22,31 @@ contract ExchangeShop is Pausable {
         string memory secretTo,
         string memory secretExchangeShop
     ) public onlyOwner whenNotPaused {
-        (bool ok, bytes memory hash) = address(remittanceContract).call(abi.encodeWithSignature("generateHash(address,string,string)", to, secretTo, secretExchangeShop));
+        // TODO: security/no-low-level-calls: Avoid using low-level function 'call'.
+        (bool ok, bytes memory hash) = address(remittanceContract)
+          .call(
+            abi.encodeWithSignature("generateHash(address,string,string)",
+            to, secretTo, secretExchangeShop
+          )
+        );
         require(ok, "generateHash must be called successfully");
 
-        (ok,) = address(remittanceContract).call(abi.encodeWithSignature("checkHash(address,string,string,bytes32)", to, secretTo, secretExchangeShop, hash));
+        (ok,) = address(remittanceContract)
+          .call(
+            abi.encodeWithSignature("checkHash(address,string,string,bytes32)",
+            to,
+            secretTo,
+            secretExchangeShop,
+            hash
+          )
+        );
         require(ok, "Hash must be valid");
 
         (ok,) = address(remittanceContract).call(
-            abi.encodeWithSignature('remit(address,string,string)', to, secretTo, secretExchangeShop)
+            abi.encodeWithSignature("remit(address,string,string)", to, secretTo, secretExchangeShop)
         );
-        require(ok, 'Remit must be called successfully');
+        // TODO: why is this error?
+        require(ok, "Remit must be called successfully");
 
         senders[to] = address(remittanceContract);
     }
@@ -49,17 +64,32 @@ contract ExchangeShop is Pausable {
         address sender = senders[msg.sender];
         require(sender != address(0), "Sender address must be valid");
 
-        (bool ok, bytes memory hash) = address(sender).call(abi.encodeWithSignature("generateHash(address,string,string)", msg.sender, secretTo, ""));
+        (bool ok, bytes memory hash) = address(sender)
+          .call(
+            abi.encodeWithSignature("generateHash(address,string,string)",
+            msg.sender,
+            secretTo,
+            ""
+          )
+        );
         require(ok, "generateHash must be called successfully");
 
-        (ok,) = address(sender).call(abi.encodeWithSignature("checkHash(address,string,string,bytes32)", msg.sender, secretTo, "", hash));
+        (ok,) = address(sender)
+          .call(
+            abi.encodeWithSignature("checkHash(address,string,string,bytes32)",
+            msg.sender,
+            secretTo,
+            "",
+            hash
+          )
+        );
         require(ok, "Hash must be valid");
 
         // Notify to sender
         (ok,) = address(sender).call(
-          abi.encodeWithSignature('withdrawedFromExchangeShop(address,string)', msg.sender, secretTo)
+          abi.encodeWithSignature("withdrawedFromExchangeShop(address,string)", msg.sender, secretTo)
         );
-        require(ok, 'encodeWithSignature must be called successfully');
+        require(ok, "encodeWithSignature must be called successfully");
 
         return true;
     }

@@ -44,6 +44,7 @@ contract Remittance is Pausable {
 
         balances[to][hash] = 0;
         // TODO: set gas?
+        // TODO: security/no-call-value: Consider using 'transfer' in place of 'call.value()'.
         (bool ok,) = msg.sender.call.value(value)(abi.encodeWithSignature("deposit(address)", to));
         require(ok, "Deposit to Exchange Shop must be successful");
 
