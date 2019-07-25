@@ -9,8 +9,9 @@ contract Remittance is Pausable {
     mapping (address => mapping (bytes32 => uint)) public balances;
     mapping (address => mapping (bytes32 => bool)) public notifications;
 
-    event LogRemit(address indexed sender, uint value);
+    event LogRemit(address indexed sender, uint indexed value);
     event LogWithdrawed(address indexed to);
+    event LogClaimBack(address indexed to, uint indexed value);
 
     function generateHash(address to, string memory secretTo, string memory secretExchangeShop) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(to, secretTo, secretExchangeShop));
@@ -60,6 +61,18 @@ contract Remittance is Pausable {
 
         notifications[to][hash] = false;
         emit LogWithdrawed(to);
+
+        return true;
+    }
+
+    function claimBack(address to, string memory secretTo, string memory secretExchangeShop) public returns (bool) {
+        bytes32 hash = generateHash(to, secretTo, secretExchangeShop);
+        require(checkHash(to, secretTo, secretExchangeShop, hash), "Hass must be valid");
+
+        uint value = balances[to][hash];
+        balances[to][hash] = 0;
+        msg.sender.transfer(value);
+        emit LogClaimBack(to, value);
 
         return true;
     }
