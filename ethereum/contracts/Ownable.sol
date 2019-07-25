@@ -1,7 +1,7 @@
 pragma solidity 0.5.10;
 
 contract Ownable {
-    address private _owner;
+    address payable private _owner;
 
     constructor() public {
         _owner = msg.sender;
@@ -13,7 +13,7 @@ contract Ownable {
       _;
     }
 
-    function getOwner() public view returns (address) {
+    function getOwner() public view returns (address payable) {
         return _owner;
     }
 }

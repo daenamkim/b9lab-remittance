@@ -44,10 +44,10 @@ contract ExchangeShop is Pausable {
         );
         require(ok, "Hash must be valid");
 
+        // request a remittance with some commission
         (ok,) = address(remittanceContract).call(
             abi.encodeWithSignature("remit(address,string,string)", to, secretTo, secretExchangeShop)
         );
-        // TODO: why is this error?
         require(ok, "Remit must be called successfully");
 
         senders[to] = address(remittanceContract);

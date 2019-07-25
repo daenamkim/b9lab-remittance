@@ -13,7 +13,7 @@ contract Remittance is Pausable {
     mapping (address => mapping (bytes32 => BalanceStruct)) public balances;
     mapping (address => mapping (bytes32 => bool)) public notifications;
 
-    event LogRemit(address indexed sender, uint indexed value);
+    event LogRemit(address indexed sender, uint indexed finalValue, uint indexed commission);
     event LogWithdrawed(address indexed to);
     event LogClaimBack(address indexed to, uint indexed value);
 
@@ -42,7 +42,7 @@ contract Remittance is Pausable {
         address to,
         bytes32 hash,
         uint32 expire
-    ) public onlyOwner whenNotPaused payable returns (bool) {
+    ) public payable onlyOwner whenNotPaused returns (bool) {
         require(msg.value > 0, "Value must be bigger than 0");
         require(hash != bytes32(0), "Hash must be valid");
         require(to != address(0), "Address must be valid");
@@ -63,17 +63,23 @@ contract Remittance is Pausable {
         require(to != address(0), "Address must be valid");
         require(checkHash(to, secretTo, secretExchangeShop, hash), "Secrets must be valid");
         require(balances[to][hash].expire > uint32(block.timestamp), "Balance must not be expired");
-
+¥
         uint value = balances[to][hash].value;
-        require(value > 0, "Balance must be bigger than 0");
+        require(value > 1000, "Balance must be bigger than 100 because commission is 1000 wei");
+        uint commission = 1000
+        uint finalValue = value - commission;
 
         balances[to][hash].value = 0;
         // TODO: set gas?
         // TODO: security/no-call-value: Consider using 'transfer' in place of 'call.value()'.
-        (bool ok,) = msg.sender.call.value(value)(abi.encodeWithSignature("deposit(address)", to));
+        (bool ok,) = msg.sender.call.value(finalValue)(abi.encodeWithSignature("deposit(address)", to));
         require(ok, "Deposit to Exchange Shop must be successful");
 
-        emit LogRemit(msg.sender, value);
+        // send commision back to the owner of a contract
+        address payable owner = getOwner();
+        owner.transfer(commission);
+
+        emit LogRemit(msg.sender, finalValue, comission);
         notifications[to][generateHash(to, secretTo, "")] = true;
 
         return true;
