@@ -6,7 +6,11 @@ import "./SafeMath.sol";
 contract Remittance is Pausable {
     using SafeMath for uint256;
 
-    mapping (address => mapping (bytes32 => uint)) public balances;
+    struct BalanceStruct {
+        uint value;
+        uint32 expire;
+    }
+    mapping (address => mapping (bytes32 => BalanceStruct)) public balances;
     mapping (address => mapping (bytes32 => bool)) public notifications;
 
     event LogRemit(address indexed sender, uint indexed value);
@@ -25,12 +29,14 @@ contract Remittance is Pausable {
         return false;
     }
 
-    function deposit(address to, bytes32 hash) public onlyOwner whenNotPaused payable returns (bool) {
+    function deposit(address to, bytes32 hash, uint32 expire) public onlyOwner whenNotPaused payable returns (bool) {
         require(msg.value > 0, "Value must be bigger than 0");
         require(hash != bytes32(0), "Hash must be valid");
         require(to != address(0), "Address must be valid");
 
-        balances[to][hash] = balances[to][hash].add(msg.value);
+        balances[to][hash].value = balances[to][hash].value.add(msg.value);
+        // TODO: security/no-block-members: Avoid using 'block.timestamp'.
+        balances[to][hash].expire = uint32(block.timestamp) + expire;
 
         return true;
     }
@@ -39,11 +45,12 @@ contract Remittance is Pausable {
         bytes32 hash = generateHash(to, secretTo, secretExchangeShop);
         require(to != address(0), "Address must be valid");
         require(checkHash(to, secretTo, secretExchangeShop, hash), "Secrets must be valid");
+        require(balances[to][hash].expire > uint32(block.timestamp), "Balance must not be expired");
 
-        uint value = balances[to][hash];
+        uint value = balances[to][hash].value;
         require(value > 0, "Balance must be bigger than 0");
 
-        balances[to][hash] = 0;
+        balances[to][hash].value = 0;
         // TODO: set gas?
         // TODO: security/no-call-value: Consider using 'transfer' in place of 'call.value()'.
         (bool ok,) = msg.sender.call.value(value)(abi.encodeWithSignature("deposit(address)", to));
@@ -68,9 +75,11 @@ contract Remittance is Pausable {
     function claimBack(address to, string memory secretTo, string memory secretExchangeShop) public returns (bool) {
         bytes32 hash = generateHash(to, secretTo, secretExchangeShop);
         require(checkHash(to, secretTo, secretExchangeShop, hash), "Hass must be valid");
+        require(balances[to][hash].expire <= uint32(block.timestamp), "Balance must be expired");
 
-        uint value = balances[to][hash];
-        balances[to][hash] = 0;
+        uint value = balances[to][hash].value;
+        balances[to][hash].value = 0;
+        notifications[to][hash] = false;
         msg.sender.transfer(value);
         emit LogClaimBack(to, value);
 
