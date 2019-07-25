@@ -6,6 +6,8 @@ import "./SafeMath.sol";
 contract Remittance is Pausable {
     using SafeMath for uint256;
 
+    uint constant public commission = 1000;
+
     struct BalanceStruct {
         uint value;
         uint32 expire;
@@ -63,11 +65,9 @@ contract Remittance is Pausable {
         require(to != address(0), "Address must be valid");
         require(checkHash(to, secretTo, secretExchangeShop, hash), "Secrets must be valid");
         require(balances[to][hash].expire > uint32(block.timestamp), "Balance must not be expired");
-¥
         uint value = balances[to][hash].value;
-        require(value > 1000, "Balance must be bigger than 100 because commission is 1000 wei");
-        uint commission = 1000
-        uint finalValue = value - commission;
+        require(value > commission, "Balance must be enough to pay commission");
+        uint finalValue = value.sub(commission);
 
         balances[to][hash].value = 0;
         // TODO: set gas?
