@@ -17,11 +17,20 @@ contract Remittance is Pausable {
     event LogWithdrawed(address indexed to);
     event LogClaimBack(address indexed to, uint indexed value);
 
-    function generateHash(address to, string memory secretTo, string memory secretExchangeShop) public pure returns (bytes32) {
+    function generateHash(
+        address to,
+        string memory secretTo,
+        string memory secretExchangeShop
+    ) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(to, secretTo, secretExchangeShop));
     }
 
-    function checkHash(address to, string memory secretTo, string memory secretExchangeShop, bytes32 hash) public pure returns (bool) {
+    function checkHash(
+        address to,
+        string memory secretTo,
+        string memory secretExchangeShop,
+        bytes32 hash
+    ) public pure returns (bool) {
         if (generateHash(to, secretTo, secretExchangeShop) == hash) {
             return true;
         }
@@ -29,7 +38,11 @@ contract Remittance is Pausable {
         return false;
     }
 
-    function deposit(address to, bytes32 hash, uint32 expire) public onlyOwner whenNotPaused payable returns (bool) {
+    function deposit(
+        address to,
+        bytes32 hash,
+        uint32 expire
+    ) public onlyOwner whenNotPaused payable returns (bool) {
         require(msg.value > 0, "Value must be bigger than 0");
         require(hash != bytes32(0), "Hash must be valid");
         require(to != address(0), "Address must be valid");
@@ -41,7 +54,11 @@ contract Remittance is Pausable {
         return true;
     }
 
-    function remit(address to, string calldata secretTo, string calldata secretExchangeShop) external whenNotPaused returns (bool) {
+    function remit(
+        address to,
+        string calldata secretTo,
+        string calldata secretExchangeShop
+    ) external whenNotPaused returns (bool) {
         bytes32 hash = generateHash(to, secretTo, secretExchangeShop);
         require(to != address(0), "Address must be valid");
         require(checkHash(to, secretTo, secretExchangeShop, hash), "Secrets must be valid");
@@ -72,7 +89,11 @@ contract Remittance is Pausable {
         return true;
     }
 
-    function claimBack(address to, string memory secretTo, string memory secretExchangeShop) public returns (bool) {
+    function claimBack(
+        address to,
+        string memory secretTo,
+        string memory secretExchangeShop
+    ) public onlyOwner whenNotPaused returns (bool) {
         bytes32 hash = generateHash(to, secretTo, secretExchangeShop);
         require(checkHash(to, secretTo, secretExchangeShop, hash), "Hass must be valid");
         require(balances[to][hash].expire <= uint32(block.timestamp), "Balance must be expired");
@@ -88,5 +109,22 @@ contract Remittance is Pausable {
 
     function kill() public onlyOwner {
       selfdestruct(msg.sender);
+    }
+
+    function updateSerets(
+        address to,
+        string memory secretTo,
+        string memory secretExchangeShop,
+        string memory secretToNew,
+        string memory secretExchangeShopNew
+    ) onlyOwner public returns (bool) {
+        bytes32 hash = generateHash(to, secretTo, secretExchangeShop);
+        require(balances[to][hash].value > 0, "Balance must be bigger than 0 if you want to update secrets");
+
+        bytes32 hashNew = generateHash(to, secretToNew, secretExchangeShopNew);
+        balances[to][hashNew].value = balances[to][hash].value;
+        balances[to][hashNew].expire = balances[to][hash].expire;
+
+        return true;
     }
 }
