@@ -13,32 +13,34 @@ contract Remittance {
 contract ExchangeShop is Pausable {
     using SafeMath for uint256;
 
-    mapping(address => uint) balances;
-    mapping(address => address) senders;
+    mapping(address => uint) public balances;
+    mapping(address => address) public senders;
 
     function exchange(
         Remittance remittanceContract,
         address to,
         string memory secretTo,
         string memory secretExchangeShop
-    ) public onlyOwner whenNotPaused {
+    ) public whenNotPaused {
         // TODO: security/no-low-level-calls: Avoid using low-level function 'call'.
-        (bool ok, bytes memory hash) = address(remittanceContract)
-          .call(
-            abi.encodeWithSignature("generateHash(address,string,string)",
-            to, secretTo, secretExchangeShop
-          )
+        (bool ok, bytes memory hash) = address(remittanceContract).call(
+            abi.encodeWithSignature(
+                "generateHash(address,string,string)",
+                to,
+                secretTo,
+                secretExchangeShop
+            )
         );
         require(ok, "generateHash must be called successfully");
 
-        (ok,) = address(remittanceContract)
-          .call(
-            abi.encodeWithSignature("checkHash(address,string,string,bytes32)",
-            to,
-            secretTo,
-            secretExchangeShop,
-            hash
-          )
+        (ok,) = address(remittanceContract).call(
+            abi.encodeWithSignature(
+                "checkHash(address,string,string,bytes32)",
+                to,
+                secretTo,
+                secretExchangeShop,
+                hash
+            )
         );
         require(ok, "Hash must be valid");
 
@@ -55,6 +57,7 @@ contract ExchangeShop is Pausable {
         require(to != address(0), "Address must be valid");
         require(msg.value > 0, "Value must be bigger than 0");
 
+        // TODO: how to do exchange rate?
         balances[to] = balances[to].add(msg.value);
 
         return true;
@@ -64,32 +67,40 @@ contract ExchangeShop is Pausable {
         address sender = senders[msg.sender];
         require(sender != address(0), "Sender address must be valid");
 
-        (bool ok, bytes memory hash) = address(sender)
-          .call(
-            abi.encodeWithSignature("generateHash(address,string,string)",
-            msg.sender,
-            secretTo,
-            ""
-          )
+        (bool ok, bytes memory hash) = address(sender).call(
+            abi.encodeWithSignature(
+                "generateHash(address,string,string)",
+                msg.sender,
+                secretTo,
+                ""
+            )
         );
-        require(ok, "generateHash must be called successfully");
+        require(ok, "generateHash() must be called successfully");
 
-        (ok,) = address(sender)
-          .call(
-            abi.encodeWithSignature("checkHash(address,string,string,bytes32)",
-            msg.sender,
-            secretTo,
-            "",
-            hash
-          )
+        (ok,) = address(sender).call(
+            abi.encodeWithSignature(
+                "checkHash(address,string,string,bytes32)",
+                msg.sender,
+                secretTo,
+                "",
+                hash
+            )
         );
         require(ok, "Hash must be valid");
 
-        // Notify to sender
+        uint value = balances[msg.sender];
+        balances[msg.sender] = 0;
+        msg.sender.transfer(value);
+
+        // notify to original sender
         (ok,) = address(sender).call(
-          abi.encodeWithSignature("withdrawedFromExchangeShop(address,string)", msg.sender, secretTo)
+            abi.encodeWithSignature(
+                "withdrawedFromExchangeShop(address,string)",
+                msg.sender,
+                secretTo
+            )
         );
-        require(ok, "encodeWithSignature must be called successfully");
+        require(ok, "withdrawedFromExchangeShop() must be called successfully");
 
         return true;
     }

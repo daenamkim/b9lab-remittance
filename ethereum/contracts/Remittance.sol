@@ -49,7 +49,7 @@ contract Remittance is Pausable {
         require(ok, "Deposit to Exchange Shop must be successful");
 
         emit LogRemit(msg.sender, value);
-        notifications[to][generateHash(to, secretTo, "")] = false;
+        notifications[to][generateHash(to, secretTo, "")] = true;
 
         return true;
     }
@@ -63,5 +63,4 @@ contract Remittance is Pausable {
 
         return true;
     }
-
 }
