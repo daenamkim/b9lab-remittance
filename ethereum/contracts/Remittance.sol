@@ -85,4 +85,8 @@ contract Remittance is Pausable {
 
         return true;
     }
+
+    function kill() public onlyOwner {
+      selfdestruct(msg.sender);
+    }
 }
