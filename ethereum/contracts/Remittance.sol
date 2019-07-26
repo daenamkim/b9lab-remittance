@@ -13,7 +13,7 @@ contract Remittance is Pausable {
         uint expire;
     }
     mapping (bytes32 => BalanceStruct) public balances;
-    mapping (address => mapping (bytes32 => bool)) public notifications;
+    mapping (bytes32 => bool) public notifications;
 
     event LogRemit(address indexed sender, uint indexed finalValue, uint indexed commission);
     event LogWithdrawed(address indexed recipient);
@@ -80,16 +80,16 @@ contract Remittance is Pausable {
         owner.transfer(commission);
 
         emit LogRemit(msg.sender, finalValue, commission);
-        notifications[recipient][generateHash(recipient, secretRecipient, "")] = true;
+        notifications[generateHash(recipient, secretRecipient, "")] = true;
 
         return true;
     }
 
     function withdrawedFromExchangeShop(address recipient, bytes32 secretRecipient) external returns (bool) {
         bytes32 hash = generateHash(recipient, secretRecipient, "");
-        require(notifications[recipient][hash], "Notfication doesn't exist");
+        require(notifications[hash], "Notfication doesn't exist");
 
-        notifications[recipient][hash] = false;
+        notifications[hash] = false;
         emit LogWithdrawed(recipient);
 
         return true;
@@ -106,7 +106,7 @@ contract Remittance is Pausable {
 
         uint value = balances[hash].value;
         balances[hash].value = 0;
-        notifications[recipient][hash] = false;
+        notifications[hash] = false;
         msg.sender.transfer(value);
         emit LogClaimBack(recipient, value);
 
