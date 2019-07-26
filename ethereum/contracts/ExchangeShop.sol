@@ -4,10 +4,10 @@ import "./Pausable.sol";
 import "./SafeMath.sol";
 
 contract Remittance {
-    function remit(address to, string calldata secretTo, string calldata secretExchangeShop) external returns (bool);
-    function withdrawedFromExchangeShop(address to, string calldata secretTo) external returns (bool);
-    function generateHash(address to, string memory secretTo, string memory secretExchangeShop) public pure returns (bytes32);
-    function checkHash(address to, string memory secretTo, string memory secretExchangeShop, bytes32 hash) public pure returns (bool);
+    function remit(address to, bytes32 secretTo, bytes32 secretExchangeShop) external returns (bool);
+    function withdrawedFromExchangeShop(address to, bytes32 secretTo) external returns (bool);
+    function generateHash(address to, bytes32 secretTo, bytes32 secretExchangeShop) public pure returns (bytes32);
+    function checkHash(address to, bytes32 secretTo, bytes32 secretExchangeShop, bytes32 hash) public pure returns (bool);
 }
 
 contract ExchangeShop is Pausable {
@@ -19,8 +19,8 @@ contract ExchangeShop is Pausable {
     function exchange(
         Remittance remittanceContract,
         address to,
-        string memory secretTo,
-        string memory secretExchangeShop
+        bytes32 secretTo,
+        bytes32 secretExchangeShop
     ) public whenNotPaused {
         // TODO: security/no-low-level-calls: Avoid using low-level function 'call'.
         (bool ok, bytes memory hash) = address(remittanceContract).call(
@@ -63,7 +63,7 @@ contract ExchangeShop is Pausable {
         return true;
     }
 
-    function withdraw(string memory secretTo) public whenNotPaused returns (bool) {
+    function withdraw(bytes32 secretTo) public whenNotPaused returns (bool) {
         address sender = senders[msg.sender];
         require(sender != address(0), "Sender address must be valid");
 

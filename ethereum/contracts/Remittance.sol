@@ -21,16 +21,16 @@ contract Remittance is Pausable {
 
     function generateHash(
         address to,
-        string memory secretTo,
-        string memory secretExchangeShop
+        bytes32 secretTo,
+        bytes32 secretExchangeShop
     ) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(to, secretTo, secretExchangeShop));
     }
 
     function checkHash(
         address to,
-        string memory secretTo,
-        string memory secretExchangeShop,
+        bytes32 secretTo,
+        bytes32 secretExchangeShop,
         bytes32 hash
     ) public pure returns (bool) {
         if (generateHash(to, secretTo, secretExchangeShop) == hash) {
@@ -58,8 +58,8 @@ contract Remittance is Pausable {
 
     function remit(
         address to,
-        string calldata secretTo,
-        string calldata secretExchangeShop
+        bytes32 secretTo,
+        bytes32 secretExchangeShop
     ) external whenNotPaused returns (bool) {
         bytes32 hash = generateHash(to, secretTo, secretExchangeShop);
         require(to != address(0), "Address must be valid");
@@ -85,7 +85,7 @@ contract Remittance is Pausable {
         return true;
     }
 
-    function withdrawedFromExchangeShop(address to, string calldata secretTo) external returns (bool) {
+    function withdrawedFromExchangeShop(address to, bytes32 secretTo) external returns (bool) {
         bytes32 hash = generateHash(to, secretTo, "");
         require(notifications[to][hash], "Notfication doesn't exist");
 
@@ -97,8 +97,8 @@ contract Remittance is Pausable {
 
     function claimBack(
         address to,
-        string memory secretTo,
-        string memory secretExchangeShop
+        bytes32 secretTo,
+        bytes32 secretExchangeShop
     ) public onlyOwner whenNotPaused returns (bool) {
         bytes32 hash = generateHash(to, secretTo, secretExchangeShop);
         require(checkHash(to, secretTo, secretExchangeShop, hash), "Hass must be valid");
@@ -119,10 +119,10 @@ contract Remittance is Pausable {
 
     function updateSerets(
         address to,
-        string memory secretTo,
-        string memory secretExchangeShop,
-        string memory secretToNew,
-        string memory secretExchangeShopNew
+        bytes32 secretTo,
+        bytes32 secretExchangeShop,
+        bytes32 secretToNew,
+        bytes32 secretExchangeShopNew
     ) onlyOwner public returns (bool) {
         bytes32 hash = generateHash(to, secretTo, secretExchangeShop);
         uint value = balances[hash].value;
