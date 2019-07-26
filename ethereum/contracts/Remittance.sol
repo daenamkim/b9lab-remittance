@@ -13,10 +13,8 @@ contract Remittance is Pausable {
         uint expire;
     }
     mapping (bytes32 => BalanceStruct) public balances;
-    mapping (bytes32 => bool) public notifications;
 
-    event LogRemit(address indexed sender, uint indexed finalValue, uint indexed commission);
-    event LogWithdrawed(address indexed recipient);
+    event LogRedeem(address indexed sender, uint indexed finalValue, uint indexed commission);
     event LogClaimBack(address indexed recipient, uint indexed value);
 
     function generateHash(
@@ -40,7 +38,7 @@ contract Remittance is Pausable {
         return false;
     }
 
-    function deposit(
+    function createRemittance(
         address recipient,
         bytes32 hash,
         uint expire
@@ -56,7 +54,7 @@ contract Remittance is Pausable {
         return true;
     }
 
-    function remit(
+    function redeem(
         address recipient,
         bytes32 secretRecipient,
         bytes32 secretExchangeShop
@@ -65,32 +63,17 @@ contract Remittance is Pausable {
         require(recipient != address(0), "Address must be valid");
         require(checkHash(recipient, secretRecipient, secretExchangeShop, hash), "Secrets must be valid");
         require(balances[hash].expire > block.timestamp, "Balance must not be expired");
+
         uint value = balances[hash].value;
         require(value > commission, "Balance must be enough to pay commission");
         uint finalValue = value.sub(commission);
-
         balances[hash].value = 0;
-        // TODO: set gas?
-        // TODO: security/no-call-value: Consider using 'transfer' in place of 'call.value()'.
-        (bool ok,) = msg.sender.call.value(finalValue)(abi.encodeWithSignature("deposit(address)", recipient));
-        require(ok, "Deposit to Exchange Shop must be successful");
-
+        // send ether to exchange shop's owner
+        msg.sender.transfer(finalValue);
         // send commision back to the owner of a contract
-        address payable owner = getOwner();
-        owner.transfer(commission);
+        getOwner().transfer(commission);
 
-        emit LogRemit(msg.sender, finalValue, commission);
-        notifications[generateHash(recipient, secretRecipient, "")] = true;
-
-        return true;
-    }
-
-    function withdrawedFromExchangeShop(address recipient, bytes32 secretRecipient) external returns (bool) {
-        bytes32 hash = generateHash(recipient, secretRecipient, "");
-        require(notifications[hash], "Notfication doesn't exist");
-
-        notifications[hash] = false;
-        emit LogWithdrawed(recipient);
+        emit LogRedeem(msg.sender, finalValue, commission);
 
         return true;
     }
@@ -106,8 +89,8 @@ contract Remittance is Pausable {
 
         uint value = balances[hash].value;
         balances[hash].value = 0;
-        notifications[hash] = false;
         msg.sender.transfer(value);
+
         emit LogClaimBack(recipient, value);
 
         return true;
