@@ -21,8 +21,8 @@ contract Remittance is Pausable {
         address recipient,
         bytes32 secretRecipient,
         bytes32 secretExchangeShop
-    ) public pure returns (bytes32) {
-        return keccak256(abi.encodePacked(recipient, secretRecipient, secretExchangeShop));
+    ) public view returns (bytes32) {
+        return keccak256(abi.encodePacked(recipient, secretRecipient, secretExchangeShop, this));
     }
 
     function checkHash(
@@ -30,7 +30,7 @@ contract Remittance is Pausable {
         bytes32 secretRecipient,
         bytes32 secretExchangeShop,
         bytes32 hash
-    ) public pure returns (bool) {
+    ) public view returns (bool) {
         if (generateHash(recipient, secretRecipient, secretExchangeShop) == hash) {
             return true;
         }
