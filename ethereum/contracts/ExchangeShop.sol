@@ -4,10 +4,10 @@ import "./Pausable.sol";
 import "./SafeMath.sol";
 
 contract Remittance {
-    function remit(address to, bytes32 secretTo, bytes32 secretExchangeShop) external returns (bool);
-    function withdrawedFromExchangeShop(address to, bytes32 secretTo) external returns (bool);
-    function generateHash(address to, bytes32 secretTo, bytes32 secretExchangeShop) public pure returns (bytes32);
-    function checkHash(address to, bytes32 secretTo, bytes32 secretExchangeShop, bytes32 hash) public pure returns (bool);
+    function remit(address recipient, bytes32 secretRecipient, bytes32 secretExchangeShop) external returns (bool);
+    function withdrawedFromExchangeShop(address recipient, bytes32 secretRecipient) external returns (bool);
+    function generateHash(address recipient, bytes32 secretRecipient, bytes32 secretExchangeShop) public pure returns (bytes32);
+    function checkHash(address recipient, bytes32 secretRecipient, bytes32 secretExchangeShop, bytes32 hash) public pure returns (bool);
 }
 
 contract ExchangeShop is Pausable {
@@ -18,16 +18,16 @@ contract ExchangeShop is Pausable {
 
     function exchange(
         Remittance remittanceContract,
-        address to,
-        bytes32 secretTo,
+        address recipient,
+        bytes32 secretRecipient,
         bytes32 secretExchangeShop
     ) public whenNotPaused {
         // TODO: security/no-low-level-calls: Avoid using low-level function 'call'.
         (bool ok, bytes memory hash) = address(remittanceContract).call(
             abi.encodeWithSignature(
                 "generateHash(address,string,string)",
-                to,
-                secretTo,
+                recipient,
+                secretRecipient,
                 secretExchangeShop
             )
         );
@@ -36,8 +36,8 @@ contract ExchangeShop is Pausable {
         (ok,) = address(remittanceContract).call(
             abi.encodeWithSignature(
                 "checkHash(address,string,string,bytes32)",
-                to,
-                secretTo,
+                recipient,
+                secretRecipient,
                 secretExchangeShop,
                 hash
             )
@@ -46,24 +46,24 @@ contract ExchangeShop is Pausable {
 
         // request a remittance with some commission
         (ok,) = address(remittanceContract).call(
-            abi.encodeWithSignature("remit(address,string,string)", to, secretTo, secretExchangeShop)
+            abi.encodeWithSignature("remit(address,string,string)", recipient, secretRecipient, secretExchangeShop)
         );
         require(ok, "Remit must be called successfully");
 
-        senders[to] = address(remittanceContract);
+        senders[recipient] = address(remittanceContract);
     }
 
-    function deposit(address to) external payable whenNotPaused returns (bool) {
-        require(to != address(0), "Address must be valid");
+    function deposit(address recipient) external payable whenNotPaused returns (bool) {
+        require(recipient != address(0), "Address must be valid");
         require(msg.value > 0, "Value must be bigger than 0");
 
         // TODO: how to do exchange rate?
-        balances[to] = balances[to].add(msg.value);
+        balances[recipient] = balances[recipient].add(msg.value);
 
         return true;
     }
 
-    function withdraw(bytes32 secretTo) public whenNotPaused returns (bool) {
+    function withdraw(bytes32 secretRecipient) public whenNotPaused returns (bool) {
         address sender = senders[msg.sender];
         require(sender != address(0), "Sender address must be valid");
 
@@ -71,7 +71,7 @@ contract ExchangeShop is Pausable {
             abi.encodeWithSignature(
                 "generateHash(address,string,string)",
                 msg.sender,
-                secretTo,
+                secretRecipient,
                 ""
             )
         );
@@ -81,7 +81,7 @@ contract ExchangeShop is Pausable {
             abi.encodeWithSignature(
                 "checkHash(address,string,string,bytes32)",
                 msg.sender,
-                secretTo,
+                secretRecipient,
                 "",
                 hash
             )
@@ -97,7 +97,7 @@ contract ExchangeShop is Pausable {
             abi.encodeWithSignature(
                 "withdrawedFromExchangeShop(address,string)",
                 msg.sender,
-                secretTo
+                secretRecipient
             )
         );
         require(ok, "withdrawedFromExchangeShop() must be called successfully");

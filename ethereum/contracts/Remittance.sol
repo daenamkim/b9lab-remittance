@@ -16,24 +16,24 @@ contract Remittance is Pausable {
     mapping (address => mapping (bytes32 => bool)) public notifications;
 
     event LogRemit(address indexed sender, uint indexed finalValue, uint indexed commission);
-    event LogWithdrawed(address indexed to);
-    event LogClaimBack(address indexed to, uint indexed value);
+    event LogWithdrawed(address indexed recipient);
+    event LogClaimBack(address indexed recipient, uint indexed value);
 
     function generateHash(
-        address to,
-        bytes32 secretTo,
+        address recipient,
+        bytes32 secretRecipient,
         bytes32 secretExchangeShop
     ) public pure returns (bytes32) {
-        return keccak256(abi.encodePacked(to, secretTo, secretExchangeShop));
+        return keccak256(abi.encodePacked(recipient, secretRecipient, secretExchangeShop));
     }
 
     function checkHash(
-        address to,
-        bytes32 secretTo,
+        address recipient,
+        bytes32 secretRecipient,
         bytes32 secretExchangeShop,
         bytes32 hash
     ) public pure returns (bool) {
-        if (generateHash(to, secretTo, secretExchangeShop) == hash) {
+        if (generateHash(recipient, secretRecipient, secretExchangeShop) == hash) {
             return true;
         }
 
@@ -41,13 +41,13 @@ contract Remittance is Pausable {
     }
 
     function deposit(
-        address to,
+        address recipient,
         bytes32 hash,
         uint expire
     ) public payable onlyOwner whenNotPaused returns (bool) {
         require(msg.value > 0, "Value must be bigger than 0");
         require(hash != bytes32(0), "Hash must be valid");
-        require(to != address(0), "Address must be valid");
+        require(recipient != address(0), "Address must be valid");
 
         balances[hash].value = msg.value;
         // TODO: security/no-block-members: Avoid using 'block.timestamp'.
@@ -57,13 +57,13 @@ contract Remittance is Pausable {
     }
 
     function remit(
-        address to,
-        bytes32 secretTo,
+        address recipient,
+        bytes32 secretRecipient,
         bytes32 secretExchangeShop
     ) external whenNotPaused returns (bool) {
-        bytes32 hash = generateHash(to, secretTo, secretExchangeShop);
-        require(to != address(0), "Address must be valid");
-        require(checkHash(to, secretTo, secretExchangeShop, hash), "Secrets must be valid");
+        bytes32 hash = generateHash(recipient, secretRecipient, secretExchangeShop);
+        require(recipient != address(0), "Address must be valid");
+        require(checkHash(recipient, secretRecipient, secretExchangeShop, hash), "Secrets must be valid");
         require(balances[hash].expire > block.timestamp, "Balance must not be expired");
         uint value = balances[hash].value;
         require(value > commission, "Balance must be enough to pay commission");
@@ -72,7 +72,7 @@ contract Remittance is Pausable {
         balances[hash].value = 0;
         // TODO: set gas?
         // TODO: security/no-call-value: Consider using 'transfer' in place of 'call.value()'.
-        (bool ok,) = msg.sender.call.value(finalValue)(abi.encodeWithSignature("deposit(address)", to));
+        (bool ok,) = msg.sender.call.value(finalValue)(abi.encodeWithSignature("deposit(address)", recipient));
         require(ok, "Deposit to Exchange Shop must be successful");
 
         // send commision back to the owner of a contract
@@ -80,35 +80,35 @@ contract Remittance is Pausable {
         owner.transfer(commission);
 
         emit LogRemit(msg.sender, finalValue, commission);
-        notifications[to][generateHash(to, secretTo, "")] = true;
+        notifications[recipient][generateHash(recipient, secretRecipient, "")] = true;
 
         return true;
     }
 
-    function withdrawedFromExchangeShop(address to, bytes32 secretTo) external returns (bool) {
-        bytes32 hash = generateHash(to, secretTo, "");
-        require(notifications[to][hash], "Notfication doesn't exist");
+    function withdrawedFromExchangeShop(address recipient, bytes32 secretRecipient) external returns (bool) {
+        bytes32 hash = generateHash(recipient, secretRecipient, "");
+        require(notifications[recipient][hash], "Notfication doesn't exist");
 
-        notifications[to][hash] = false;
-        emit LogWithdrawed(to);
+        notifications[recipient][hash] = false;
+        emit LogWithdrawed(recipient);
 
         return true;
     }
 
     function claimBack(
-        address to,
-        bytes32 secretTo,
+        address recipient,
+        bytes32 secretRecipient,
         bytes32 secretExchangeShop
     ) public onlyOwner whenNotPaused returns (bool) {
-        bytes32 hash = generateHash(to, secretTo, secretExchangeShop);
-        require(checkHash(to, secretTo, secretExchangeShop, hash), "Hass must be valid");
+        bytes32 hash = generateHash(recipient, secretRecipient, secretExchangeShop);
+        require(checkHash(recipient, secretRecipient, secretExchangeShop, hash), "Hass must be valid");
         require(balances[hash].expire <= block.timestamp, "Balance must be expired");
 
         uint value = balances[hash].value;
         balances[hash].value = 0;
-        notifications[to][hash] = false;
+        notifications[recipient][hash] = false;
         msg.sender.transfer(value);
-        emit LogClaimBack(to, value);
+        emit LogClaimBack(recipient, value);
 
         return true;
     }
@@ -118,17 +118,17 @@ contract Remittance is Pausable {
     }
 
     function updateSerets(
-        address to,
-        bytes32 secretTo,
+        address recipient,
+        bytes32 secretRecipient,
         bytes32 secretExchangeShop,
-        bytes32 secretToNew,
+        bytes32 secretRecipientNew,
         bytes32 secretExchangeShopNew
-    ) onlyOwner public returns (bool) {
-        bytes32 hash = generateHash(to, secretTo, secretExchangeShop);
+    ) public onlyOwner returns (bool) {
+        bytes32 hash = generateHash(recipient, secretRecipient, secretExchangeShop);
         uint value = balances[hash].value;
         require(value > 0, "Balance must be bigger than 0 if you want to update secrets");
 
-        bytes32 hashNew = generateHash(to, secretToNew, secretExchangeShopNew);
+        bytes32 hashNew = generateHash(recipient, secretRecipientNew, secretExchangeShopNew);
         balances[hashNew].value = value;
         balances[hashNew].expire = balances[hash].expire;
         balances[hash].value = 0;
