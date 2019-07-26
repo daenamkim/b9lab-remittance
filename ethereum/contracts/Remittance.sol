@@ -10,7 +10,7 @@ contract Remittance is Pausable {
 
     struct BalanceStruct {
         uint value;
-        uint32 expire;
+        uint expire;
     }
     mapping (bytes32 => BalanceStruct) public balances;
     mapping (address => mapping (bytes32 => bool)) public notifications;
@@ -43,7 +43,7 @@ contract Remittance is Pausable {
     function deposit(
         address to,
         bytes32 hash,
-        uint32 expire
+        uint expire
     ) public payable onlyOwner whenNotPaused returns (bool) {
         require(msg.value > 0, "Value must be bigger than 0");
         require(hash != bytes32(0), "Hash must be valid");
@@ -51,7 +51,7 @@ contract Remittance is Pausable {
 
         balances[hash].value = msg.value;
         // TODO: security/no-block-members: Avoid using 'block.timestamp'.
-        balances[hash].expire = uint32(block.timestamp) + expire;
+        balances[hash].expire = block.timestamp.add(expire);
 
         return true;
     }
@@ -64,7 +64,7 @@ contract Remittance is Pausable {
         bytes32 hash = generateHash(to, secretTo, secretExchangeShop);
         require(to != address(0), "Address must be valid");
         require(checkHash(to, secretTo, secretExchangeShop, hash), "Secrets must be valid");
-        require(balances[hash].expire > uint32(block.timestamp), "Balance must not be expired");
+        require(balances[hash].expire > block.timestamp, "Balance must not be expired");
         uint value = balances[hash].value;
         require(value > commission, "Balance must be enough to pay commission");
         uint finalValue = value.sub(commission);
@@ -102,7 +102,7 @@ contract Remittance is Pausable {
     ) public onlyOwner whenNotPaused returns (bool) {
         bytes32 hash = generateHash(to, secretTo, secretExchangeShop);
         require(checkHash(to, secretTo, secretExchangeShop, hash), "Hass must be valid");
-        require(balances[hash].expire <= uint32(block.timestamp), "Balance must be expired");
+        require(balances[hash].expire <= block.timestamp, "Balance must be expired");
 
         uint value = balances[hash].value;
         balances[hash].value = 0;
