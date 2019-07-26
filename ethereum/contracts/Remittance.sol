@@ -12,7 +12,7 @@ contract Remittance is Pausable {
         uint value;
         uint32 expire;
     }
-    mapping (address => mapping (bytes32 => BalanceStruct)) public balances;
+    mapping (bytes32 => BalanceStruct) public balances;
     mapping (address => mapping (bytes32 => bool)) public notifications;
 
     event LogRemit(address indexed sender, uint indexed finalValue, uint indexed commission);
@@ -49,9 +49,9 @@ contract Remittance is Pausable {
         require(hash != bytes32(0), "Hash must be valid");
         require(to != address(0), "Address must be valid");
 
-        balances[to][hash].value = balances[to][hash].value.add(msg.value);
+        balances[hash].value = msg.value;
         // TODO: security/no-block-members: Avoid using 'block.timestamp'.
-        balances[to][hash].expire = uint32(block.timestamp) + expire;
+        balances[hash].expire = uint32(block.timestamp) + expire;
 
         return true;
     }
@@ -64,12 +64,12 @@ contract Remittance is Pausable {
         bytes32 hash = generateHash(to, secretTo, secretExchangeShop);
         require(to != address(0), "Address must be valid");
         require(checkHash(to, secretTo, secretExchangeShop, hash), "Secrets must be valid");
-        require(balances[to][hash].expire > uint32(block.timestamp), "Balance must not be expired");
-        uint value = balances[to][hash].value;
+        require(balances[hash].expire > uint32(block.timestamp), "Balance must not be expired");
+        uint value = balances[hash].value;
         require(value > commission, "Balance must be enough to pay commission");
         uint finalValue = value.sub(commission);
 
-        balances[to][hash].value = 0;
+        balances[hash].value = 0;
         // TODO: set gas?
         // TODO: security/no-call-value: Consider using 'transfer' in place of 'call.value()'.
         (bool ok,) = msg.sender.call.value(finalValue)(abi.encodeWithSignature("deposit(address)", to));
@@ -79,7 +79,7 @@ contract Remittance is Pausable {
         address payable owner = getOwner();
         owner.transfer(commission);
 
-        emit LogRemit(msg.sender, finalValue, comission);
+        emit LogRemit(msg.sender, finalValue, commission);
         notifications[to][generateHash(to, secretTo, "")] = true;
 
         return true;
@@ -102,10 +102,10 @@ contract Remittance is Pausable {
     ) public onlyOwner whenNotPaused returns (bool) {
         bytes32 hash = generateHash(to, secretTo, secretExchangeShop);
         require(checkHash(to, secretTo, secretExchangeShop, hash), "Hass must be valid");
-        require(balances[to][hash].expire <= uint32(block.timestamp), "Balance must be expired");
+        require(balances[hash].expire <= uint32(block.timestamp), "Balance must be expired");
 
-        uint value = balances[to][hash].value;
-        balances[to][hash].value = 0;
+        uint value = balances[hash].value;
+        balances[hash].value = 0;
         notifications[to][hash] = false;
         msg.sender.transfer(value);
         emit LogClaimBack(to, value);
@@ -125,11 +125,13 @@ contract Remittance is Pausable {
         string memory secretExchangeShopNew
     ) onlyOwner public returns (bool) {
         bytes32 hash = generateHash(to, secretTo, secretExchangeShop);
-        require(balances[to][hash].value > 0, "Balance must be bigger than 0 if you want to update secrets");
+        uint value = balances[hash].value;
+        require(value > 0, "Balance must be bigger than 0 if you want to update secrets");
 
         bytes32 hashNew = generateHash(to, secretToNew, secretExchangeShopNew);
-        balances[to][hashNew].value = balances[to][hash].value;
-        balances[to][hashNew].expire = balances[to][hash].expire;
+        balances[hashNew].value = value;
+        balances[hashNew].expire = balances[hash].expire;
+        balances[hash].value = 0;
 
         return true;
     }
