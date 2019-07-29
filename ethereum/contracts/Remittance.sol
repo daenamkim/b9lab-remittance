@@ -18,34 +18,18 @@ contract Remittance is Pausable {
     event LogClaimBack(address indexed recipient, uint indexed value);
 
     function generateHash(
-        address recipient,
         bytes32 secretRecipient,
         bytes32 secretExchangeShop
     ) public view returns (bytes32) {
-        return keccak256(abi.encodePacked(recipient, secretRecipient, secretExchangeShop, this));
-    }
-
-    function checkHash(
-        address recipient,
-        bytes32 secretRecipient,
-        bytes32 secretExchangeShop,
-        bytes32 hash
-    ) public view returns (bool) {
-        if (generateHash(recipient, secretRecipient, secretExchangeShop) == hash) {
-            return true;
-        }
-
-        return false;
+        return keccak256(abi.encodePacked(secretRecipient, secretExchangeShop, this));
     }
 
     function createRemittance(
-        address recipient,
         bytes32 hash,
         uint expire
     ) public payable onlyOwner whenNotPaused returns (bool) {
         require(msg.value > 0, "Value must be bigger than 0");
         require(hash != bytes32(0), "Hash must be valid");
-        require(recipient != address(0), "Address must be valid");
 
         balances[hash].value = msg.value;
         // TODO: security/no-block-members: Avoid using 'block.timestamp'.
@@ -55,13 +39,11 @@ contract Remittance is Pausable {
     }
 
     function redeem(
-        address recipient,
         bytes32 secretRecipient,
         bytes32 secretExchangeShop
     ) external whenNotPaused returns (bool) {
-        bytes32 hash = generateHash(recipient, secretRecipient, secretExchangeShop);
-        require(recipient != address(0), "Address must be valid");
-        require(checkHash(recipient, secretRecipient, secretExchangeShop, hash), "Secrets must be valid");
+        bytes32 hash = generateHash(secretRecipient, secretExchangeShop);
+        require(balances[hash].value > 0, "Hash must exists or balace must be bigger than 0");
         require(balances[hash].expire > block.timestamp, "Balance must not be expired");
 
         uint value = balances[hash].value;
