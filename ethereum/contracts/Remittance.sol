@@ -30,6 +30,7 @@ contract Remittance is Pausable {
     ) public payable onlyOwner whenNotPaused returns (bool) {
         require(msg.value > 0, "Value must be bigger than 0");
         require(hash != bytes32(0), "Hash must be valid");
+        require(balances[hash].value == 0, "Balance should be 0 for this hash");
 
         balances[hash].value = msg.value;
         // TODO: security/no-block-members: Avoid using 'block.timestamp'.
