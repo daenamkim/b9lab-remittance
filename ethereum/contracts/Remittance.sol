@@ -99,23 +99,4 @@ contract Remittance is Pausable {
     function kill() public onlyOwner {
       selfdestruct(msg.sender);
     }
-
-    function updateSerets(
-        address recipient,
-        bytes32 secretRecipient,
-        bytes32 secretExchangeShop,
-        bytes32 secretRecipientNew,
-        bytes32 secretExchangeShopNew
-    ) public onlyOwner returns (bool) {
-        bytes32 hash = generateHash(recipient, secretRecipient, secretExchangeShop);
-        uint value = balances[hash].value;
-        require(value > 0, "Balance must be bigger than 0 if you want to update secrets");
-
-        bytes32 hashNew = generateHash(recipient, secretRecipientNew, secretExchangeShopNew);
-        balances[hashNew].value = value;
-        balances[hashNew].expire = balances[hash].expire;
-        balances[hash].value = 0;
-
-        return true;
-    }
 }
