@@ -70,10 +70,10 @@ contract Remittance is Pausable {
         balances[hash].value = 0;
         // send ether to exchange shop's owner
         msg.sender.transfer(finalValue);
-        // send commision back to the owner of a contract
-        getOwner().transfer(commission);
+        // send commision back to the owner of a contract because Alice is providing this contract for users
+        address(bytes20(getOwner())).transfer(commission);
 
-        emit LogRedeem(msg.sender, finalValue, commission);
+        emit LogRedeem(msg.sender, finalValue);
 
         return true;
     }
