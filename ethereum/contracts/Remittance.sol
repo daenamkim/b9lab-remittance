@@ -14,7 +14,7 @@ contract Remittance is Pausable {
     }
     mapping (bytes32 => BalanceStruct) public balances;
 
-    event LogRedeem(address indexed sender, uint indexed finalValue, uint indexed commission);
+    event LogRedeem(address indexed redeemer, uint indexed finalValue);
     event LogClaimBack(address indexed recipient, uint indexed value);
 
     function generateHash(
@@ -78,20 +78,14 @@ contract Remittance is Pausable {
         return true;
     }
 
-    function claimBack(
-        address recipient,
-        bytes32 secretRecipient,
-        bytes32 secretExchangeShop
-    ) public onlyOwner whenNotPaused returns (bool) {
-        bytes32 hash = generateHash(recipient, secretRecipient, secretExchangeShop);
-        require(checkHash(recipient, secretRecipient, secretExchangeShop, hash), "Hass must be valid");
+    function claimBack(bytes32 hash) public whenNotPaused returns (bool) {
         require(balances[hash].expire <= block.timestamp, "Balance must be expired");
 
         uint value = balances[hash].value;
         balances[hash].value = 0;
         msg.sender.transfer(value);
 
-        emit LogClaimBack(recipient, value);
+        emit LogClaimBack(msg.sender, value);
 
         return true;
     }
