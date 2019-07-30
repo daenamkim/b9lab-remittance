@@ -54,13 +54,13 @@ contract Remittance is Pausable {
         require(balances[hash].expire > block.timestamp, "Balance must not be expired");
 
         uint value = balances[hash].value;
-        require(value > commission, "Balance must be bigger than commission");
+        uint finalValue = value.sub(commission);
 
         // send ether to exchange shop's owner
         balances[hash].value = 0;
-        msg.sender.transfer(value);
+        msg.sender.transfer(finalValue);
 
-        emit LogRedeemed(msg.sender, value, value.sub(commission));
+        emit LogRedeemed(msg.sender, value, finalValue);
 
         return true;
     }
