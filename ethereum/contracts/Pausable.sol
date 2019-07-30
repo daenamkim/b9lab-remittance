@@ -3,7 +3,11 @@ pragma solidity 0.5.10;
 import "./Ownable.sol";
 
 contract Pausable is Ownable {
-    bool private _paused = false;
+    bool private _paused;
+
+    constructor() public {
+        _paused = false;
+    }
 
     event LogPaused(address owner);
     event LogUnpaused(address owner);
