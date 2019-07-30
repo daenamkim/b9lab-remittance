@@ -44,14 +44,12 @@ contract Remittance is Pausable {
         bytes32 secretExchangeShop
     ) external whenNotPaused returns (bool) {
         bytes32 hash = generateHash(secretRecipient, secretExchangeShop);
-        require(balances[hash].value > 0, "Hash must exists or balace must be bigger than 0");
-        require(balances[hash].expire > block.timestamp, "Balance must not be expired");
-
         uint value = balances[hash].value;
+        require(balances[hash].expire > block.timestamp, "Balance must not be expired");
         require(value > commission, "Balance must be enough to pay commission");
         uint finalValue = value.sub(commission);
-        balances[hash].value = 0;
         // send ether to exchange shop's owner
+        balances[hash].value = 0;
         msg.sender.transfer(finalValue);
         // send commision back to the owner of a contract because Alice is providing this contract for users
         address(bytes20(getOwner())).transfer(commission);
