@@ -14,7 +14,7 @@ contract Remittance is Pausable {
     }
     mapping (bytes32 => BalanceStruct) public balances;
 
-    event LogRedeem(address indexed redeemer, uint indexed finalValue);
+    event LogRedeem(address indexed redeemer, uint indexed deposit, uint indexed finalValue);
     event LogClaimBack(address indexed recipient, uint indexed value);
 
     function generateHash(
@@ -56,7 +56,7 @@ contract Remittance is Pausable {
         // send commision back to the owner of a contract because Alice is providing this contract for users
         address(bytes20(getOwner())).transfer(commission);
 
-        emit LogRedeem(msg.sender, finalValue);
+        emit LogRedeem(msg.sender, value, finalValue);
 
         return true;
     }
