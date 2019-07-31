@@ -15,18 +15,24 @@ contract Remittance is Pausable {
         uint expire;
     }
     mapping (bytes32 => BalanceStruct) public balances;
+    bool public isAlive;
 
     uint private _commission;
-    uint private _commissionCollected;
+    uint private _commissionTotal;
+    uint private _balanceTotal;
 
     constructor() public {
+        isAlive = true;
+        _balanceTotal = 0;
         _commission = 1000;
-        _commissionCollected = 0;
+        _commissionTotal = 0;
     }
 
     event LogDeposited(address indexed sender, uint indexed originalValue, uint indexed depositedValue);
     event LogRedeemed(address indexed redeemer, uint indexed originalValue, uint indexed redeemedValue);
     event LogRefunded(address indexed recipient, uint indexed value);
+    event LogKilled(address indexed owner);
+    event LogNotifiedBeforeSelfdesctruct(string indexed message);
 
     function generateHash(
         bytes32 secretRecipient,
@@ -39,6 +45,7 @@ contract Remittance is Pausable {
         bytes32 hash,
         uint expire
     ) public payable whenNotPaused returns (bool) {
+        require(isAlive, "Contract should be alive");
         require(expire < EXPIRE_LIMIT, "Expire should be within 7 days");
         require(msg.value > _commission, "Balance must be bigger than commission");
         require(hash != bytes32(0), "Hash must be valid");
@@ -46,6 +53,8 @@ contract Remittance is Pausable {
 
         // Pre-deduction for commission because changed commission will be a problem on redeem()
         uint finalValue = msg.value.sub(_commission);
+        _balanceTotal = _balanceTotal.add(finalValue);
+        _commissionTotal = _commissionTotal.add(_commission);
         balances[hash] = BalanceStruct({
             from: msg.sender,
             valueOrigin: msg.value,
@@ -64,8 +73,9 @@ contract Remittance is Pausable {
         BalanceStruct memory balance = balances[hash];
         require(balance.expire > block.timestamp, "Balance must not be expired");
 
-        // send ether to exchange shop's owner
+        _balanceTotal = _balanceTotal.sub(balance.value);
         balances[hash].value = 0;
+        // send ether to exchange shop's owner
         msg.sender.transfer(balance.value);
 
         emit LogRedeemed(msg.sender, balance.valueOrigin, balance.value);
@@ -90,6 +100,14 @@ contract Remittance is Pausable {
         return true;
     }
 
+    function getBalanceTotal() public view onlyOwner returns (uint) {
+        return _balanceTotal;
+    }
+
+    function getCommissionTotal() public view onlyOwner returns (uint) {
+        return _commissionTotal;
+    }
+
     function getCommission() public view onlyOwner whenNotPaused returns (uint) {
         return _commission;
     }
@@ -100,7 +118,18 @@ contract Remittance is Pausable {
         return true;
     }
 
-    function kill() public onlyOwner {
-      selfdestruct(msg.sender);
+    function kill() public onlyOwner returns (bool) {
+        if (_balanceTotal > 0) {
+            emit LogNotifiedBeforeSelfdesctruct("This contract will be destructed. Please withdraw all balances ASAP.");
+            return false;
+        }
+
+        isAlive = false;
+
+        emit LogKilled(msg.sender);
+
+        selfdestruct(msg.sender);
+
+        return true;
     }
 }
