@@ -6,16 +6,23 @@ import "./SafeMath.sol";
 contract Remittance is Pausable {
     using SafeMath for uint256;
 
-    // TODO: make this changeable
-    uint constant public commission = 1000;
     uint constant public EXPIRE_LIMIT = 7 days;
 
     struct BalanceStruct {
         address from;
+        uint valueOrigin;
         uint value;
         uint expire;
     }
     mapping (bytes32 => BalanceStruct) public balances;
+
+    uint private _commission;
+    uint private _commissionCollected;
+
+    constructor() public {
+        _commission = 1000;
+        _commissionCollected = 0;
+    }
 
     event LogDeposited(address indexed sender, uint indexed originalValue, uint indexed depositedValue);
     event LogRedeemed(address indexed redeemer, uint indexed originalValue, uint indexed redeemedValue);
@@ -33,34 +40,35 @@ contract Remittance is Pausable {
         uint expire
     ) public payable whenNotPaused returns (bool) {
         require(expire < EXPIRE_LIMIT, "Expire should be within 7 days");
-        require(msg.value > 0, "Value must be bigger than 0");
+        require(msg.value > _commission, "Balance must be bigger than commission");
         require(hash != bytes32(0), "Hash must be valid");
         require(balances[hash].value == 0, "Balance should be 0 for this hash");
 
+        // Pre-deduction for commission because changed commission will be a problem on redeem()
+        uint finalValue = msg.value.sub(_commission);
         balances[hash] = BalanceStruct({
             from: msg.sender,
-            value: msg.value,
+            valueOrigin: msg.value,
+            value: finalValue,
             // TODO: security/no-block-members: Avoid using 'block.timestamp'.
             expire: block.timestamp.add(expire)
         });
 
-        emit LogDeposited(msg.sender, msg.value, msg.value.sub(commission));
+        emit LogDeposited(msg.sender, msg.value, finalValue);
 
         return true;
     }
 
     function redeem(bytes32 secretRecipient) external whenNotPaused returns (bool) {
         bytes32 hash = generateHash(secretRecipient, msg.sender);
-        require(balances[hash].expire > block.timestamp, "Balance must not be expired");
-
-        uint value = balances[hash].value;
-        uint finalValue = value.sub(commission);
+        BalanceStruct memory balance = balances[hash];
+        require(balance.expire > block.timestamp, "Balance must not be expired");
 
         // send ether to exchange shop's owner
         balances[hash].value = 0;
-        msg.sender.transfer(finalValue);
+        msg.sender.transfer(balance.value);
 
-        emit LogRedeemed(msg.sender, value, finalValue);
+        emit LogRedeemed(msg.sender, balance.valueOrigin, balance.value);
 
         return true;
     }
@@ -82,7 +90,15 @@ contract Remittance is Pausable {
         return true;
     }
 
-    // TODO: add a function take commission back later
+    function getCommission() public view onlyOwner whenNotPaused returns (uint) {
+        return _commission;
+    }
+
+    function setCommission(uint newCommission) public onlyOwner whenNotPaused returns (bool) {
+        _commission = newCommission;
+
+        return true;
+    }
 
     function kill() public onlyOwner {
       selfdestruct(msg.sender);
