@@ -67,15 +67,17 @@ contract Remittance is Pausable {
 
     function redeem(bytes32 secretRecipient) external whenNotPaused returns (bool) {
         bytes32 hash = generateHash(secretRecipient, msg.sender);
-        BalanceStruct memory balance = balances[hash];
-        require(balance.expire > block.timestamp, "Balance must not be expired");
+        uint value = balances[hash].value;
+        uint valueOrigin = balances[hash].valueOrigin;
+        uint expire = balances[hash].expire;
+        require(expire > block.timestamp, "Balance must not be expired");
 
-        _balanceTotal = _balanceTotal.sub(balance.value);
+        _balanceTotal = _balanceTotal.sub(value);
         balances[hash].value = 0;
         // send ether to exchange shop's owner
-        msg.sender.transfer(balance.value);
+        msg.sender.transfer(value);
 
-        emit LogRedeemed(msg.sender, balance.valueOrigin, balance.value);
+        emit LogRedeemed(msg.sender, valueOrigin, value);
 
         return true;
     }
