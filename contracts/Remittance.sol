@@ -26,9 +26,9 @@ contract Remittance is Pausable {
         _commissionTotal = 0;
     }
 
-    event LogDeposited(address indexed sender, uint indexed originalValue, uint indexed depositedValue);
-    event LogRedeemed(address indexed redeemer, uint indexed originalValue, uint indexed redeemedValue);
-    event LogRefunded(address indexed recipient, uint indexed value);
+    event LogDeposited(address indexed sender, uint originalValue, uint depositedValue);
+    event LogRedeemed(address indexed redeemer, uint originalValue, uint redeemedValue);
+    event LogRefunded(address indexed recipient, uint value);
     event LogKilled(address indexed owner);
     event LogNotifiedBeforeSelfdesctruct(string indexed message);
 
