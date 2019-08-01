@@ -15,14 +15,12 @@ contract Remittance is Pausable {
         uint expire;
     }
     mapping (bytes32 => BalanceStruct) public balances;
-    bool public isAlive;
 
     uint private _commission;
     uint private _commissionTotal;
     uint private _balanceTotal;
 
     constructor() public {
-        isAlive = true;
         _balanceTotal = 0;
         _commission = 1000;
         _commissionTotal = 0;
@@ -45,7 +43,6 @@ contract Remittance is Pausable {
         bytes32 hash,
         uint expire
     ) public payable whenNotPaused returns (bool) {
-        require(isAlive, "Contract should be alive");
         require(expire < EXPIRE_LIMIT, "Expire should be within 7 days");
         require(msg.value > _commission, "Balance must be bigger than commission");
         require(hash != bytes32(0), "Hash must be valid");
@@ -123,8 +120,6 @@ contract Remittance is Pausable {
             emit LogNotifiedBeforeSelfdesctruct("This contract will be destructed. Please withdraw all balances ASAP.");
             return false;
         }
-
-        isAlive = false;
 
         emit LogKilled(msg.sender);
 
