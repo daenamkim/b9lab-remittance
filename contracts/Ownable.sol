@@ -6,7 +6,6 @@ contract Ownable {
 
     constructor() public {
         _owner = msg.sender;
-        _ownerCandidate = address(0);
     }
 
     event LogRequestOwnerCandidate(address candidate);
