@@ -81,8 +81,7 @@ contract Remittance is Pausable {
     }
 
     // Does not take commission for refund as a good service for users. :)
-    function refund(bytes32 secretRecipient) public whenNotPaused returns (bool) {
-        bytes32 hash = generateHash(secretRecipient, msg.sender);
+    function refund(bytes32 hash) public whenNotPaused returns (bool) {
         require(balances[hash].from == msg.sender, "From address must be equal to msg.sender");
         require(balances[hash].expire <= block.timestamp, "Balance must be expired");
 
