@@ -10,7 +10,7 @@ contract Remittance is Pausable {
 
     struct BalanceStruct {
         address from;
-        uint valueOrigin;
+        uint commission;
         uint value;
         uint expire;
     }
@@ -26,8 +26,8 @@ contract Remittance is Pausable {
         _commissionTotal = 0;
     }
 
-    event LogDeposited(address indexed sender, uint originalValue, uint depositedValue);
-    event LogRedeemed(address indexed redeemer, uint originalValue, uint redeemedValue);
+    event LogDeposited(address indexed sender, uint commission, uint depositedValue);
+    event LogRedeemed(address indexed redeemer, uint commission, uint redeemedValue);
     event LogRefunded(address indexed recipient, uint value);
     event LogKilled(address indexed owner);
     event LogNotifiedBeforeSelfdesctruct(string indexed message);
@@ -54,13 +54,13 @@ contract Remittance is Pausable {
         _commissionTotal = _commissionTotal.add(_commission);
         balances[hash] = BalanceStruct({
             from: msg.sender,
-            valueOrigin: msg.value,
+            commission: _commission,
             value: finalValue,
             // TODO: security/no-block-members: Avoid using 'block.timestamp'.
             expire: block.timestamp.add(expire)
         });
 
-        emit LogDeposited(msg.sender, msg.value, finalValue);
+        emit LogDeposited(msg.sender, _commission, finalValue);
 
         return true;
     }
@@ -68,7 +68,7 @@ contract Remittance is Pausable {
     function redeem(bytes32 secretRecipient) external whenNotPaused returns (bool) {
         bytes32 hash = generateHash(secretRecipient, msg.sender);
         uint value = balances[hash].value;
-        uint valueOrigin = balances[hash].valueOrigin;
+        uint commission = balances[hash].commission;
         uint expire = balances[hash].expire;
         require(expire > block.timestamp, "Balance must not be expired");
 
@@ -77,7 +77,7 @@ contract Remittance is Pausable {
         // send ether to exchange shop's owner
         msg.sender.transfer(value);
 
-        emit LogRedeemed(msg.sender, valueOrigin, value);
+        emit LogRedeemed(msg.sender, commission, value);
 
         return true;
     }
