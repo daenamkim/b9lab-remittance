@@ -32,6 +32,7 @@ contract Remittance is Pausable {
     event LogRefunded(address indexed recipient, uint value);
     event LogKilled(address indexed owner);
     event LogNotifiedBeforeSelfdesctruct(string indexed message);
+    event LogSetCommission(address indexed owner, uint newCommission);
 
     function generateHash(
         bytes32 secretRecipient,
@@ -114,6 +115,8 @@ contract Remittance is Pausable {
 
     function setCommission(uint newCommission) public onlyOwner whenNotPaused returns (bool) {
         _commission = newCommission;
+
+        emit LogSetCommission(msg.sender, newCommission);
 
         return true;
     }
