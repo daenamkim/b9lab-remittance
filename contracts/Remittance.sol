@@ -13,6 +13,7 @@ contract Remittance is Pausable {
         uint commission;
         uint value;
         uint expire;
+        bool used;
     }
     mapping (bytes32 => BalanceStruct) public balances;
 
@@ -45,8 +46,8 @@ contract Remittance is Pausable {
     ) public payable whenNotPaused returns (bool) {
         require(expire < EXPIRE_LIMIT, "Expire should be within 7 days");
         require(msg.value > _commission, "Balance must be bigger than commission");
+        require(!balances[hash].used, "Hash shdould not be used before");
         require(hash != bytes32(0), "Hash must be valid");
-        require(balances[hash].value == 0, "Balance should be 0 for this hash");
 
         // Pre-deduction for commission because changed commission will be a problem on redeem()
         uint finalValue = msg.value.sub(_commission);
@@ -57,7 +58,8 @@ contract Remittance is Pausable {
             commission: _commission,
             value: finalValue,
             // TODO: security/no-block-members: Avoid using 'block.timestamp'.
-            expire: block.timestamp.add(expire)
+            expire: block.timestamp.add(expire),
+            used: true
         });
 
         emit LogDeposited(msg.sender, _commission, finalValue);
