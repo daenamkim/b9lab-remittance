@@ -1,9 +1,9 @@
 pragma solidity 0.5.10;
 
-import "./Pausable.sol";
+import "./Killable.sol";
 import "./SafeMath.sol";
 
-contract Remittance is Pausable {
+contract Remittance is Killable {
     using SafeMath for uint256;
 
     uint constant public EXPIRE_LIMIT = 7 days;
@@ -41,7 +41,7 @@ contract Remittance is Pausable {
     function createRemittance(
         bytes32 hash,
         uint expire
-    ) public payable whenNotPaused returns (bool) {
+    ) public payable whenNotPaused whenNotKilled returns (bool) {
         require(expire < EXPIRE_LIMIT, "Expire should be within 7 days");
         require(msg.value > _commission, "Balance must be bigger than commission");
         require(hash != bytes32(0), "Hash must be valid");
@@ -64,7 +64,7 @@ contract Remittance is Pausable {
         return true;
     }
 
-    function redeem(bytes32 secretRecipient) external whenNotPaused returns (bool) {
+    function redeem(bytes32 secretRecipient) external whenNotPaused whenNotKilled returns (bool) {
         bytes32 hash = generateHash(secretRecipient, msg.sender);
         uint value = balances[hash].value;
         uint commission = balances[hash].commission;
@@ -84,7 +84,6 @@ contract Remittance is Pausable {
     // Does not take commission for refund as a good service for users. :)
     function refund(bytes32 hash) public whenNotPaused returns (bool) {
         require(balances[hash].from == msg.sender, "From address must be equal to msg.sender");
-        require(balances[hash].expire <= block.timestamp, "Balance must be expired");
 
         uint value = balances[hash].value;
         require(value > 0, "No balance to be refunded");
@@ -109,23 +108,10 @@ contract Remittance is Pausable {
         return _commission;
     }
 
-    function setCommission(uint newCommission) public onlyOwner whenNotPaused returns (bool) {
+    function setCommission(uint newCommission) public onlyOwner whenNotPaused whenNotKilled returns (bool) {
         _commission = newCommission;
 
         emit LogSetCommission(msg.sender, newCommission);
-
-        return true;
-    }
-
-    function kill() public onlyOwner returns (bool) {
-        if (_balanceTotal > 0) {
-            emit LogNotifiedBeforeSelfdesctruct("This contract will be destructed. Please withdraw all balances ASAP.");
-            return false;
-        }
-
-        emit LogKilled(msg.sender);
-
-        selfdestruct(msg.sender);
 
         return true;
     }
