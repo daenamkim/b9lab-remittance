@@ -22,9 +22,7 @@ contract Remittance is Pausable {
     uint private _balanceTotal;
 
     constructor() public {
-        _balanceTotal = 0;
         _commission = 1000;
-        _commissionTotal = 0;
     }
 
     event LogDeposited(address indexed sender, uint commission, uint depositedValue);
