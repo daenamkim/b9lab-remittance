@@ -22,6 +22,10 @@ contract Ownable {
         return _owner;
     }
 
+    function getOwnerCandidate() public view returns (address) {
+        return _ownerCandidate;
+    }
+
     function requestOwnerCandidate(address ownerCandidate) public onlyOwner returns (bool) {
         _ownerCandidate = ownerCandidate;
 
