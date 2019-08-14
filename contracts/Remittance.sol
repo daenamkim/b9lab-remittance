@@ -73,10 +73,11 @@ contract Remittance is Killable {
 
         _balanceTotal = _balanceTotal.sub(value);
         balances[hash].value = 0;
-        // send ether to exchange shop's owner
-        msg.sender.transfer(value);
 
         emit LogRedeemed(msg.sender, commission, value);
+
+        // send ether to exchange shop's owner
+        msg.sender.transfer(value);
 
         return true;
     }
