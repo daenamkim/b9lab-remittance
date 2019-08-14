@@ -39,14 +39,15 @@ contract Remittance is Killable {
         bytes32 hash,
         uint expire
     ) public payable whenNotPaused whenNotKilled returns (bool) {
+        uint commission = _commission;
         require(expire < EXPIRE_LIMIT, "Expire should be within 7 days");
-        require(msg.value > _commission, "Balance must be bigger than commission");
+        require(msg.value > commission, "Balance must be bigger than commission");
         require(hash != bytes32(0), "Hash must be valid");
         require(balances[hash].value == 0, "Balance should be 0 for this hash");
 
         // Pre-deduction for commission because changed commission will be a problem on redeem()
-        uint finalValue = msg.value.sub(_commission);
-        _commissionCollected = _commissionCollected.add(_commission);
+        uint finalValue = msg.value.sub(commission);
+        _commissionCollected = _commissionCollected.add(commission);
         balances[hash] = BalanceStruct({
             from: msg.sender,
             value: finalValue,
@@ -54,7 +55,7 @@ contract Remittance is Killable {
             expire: block.timestamp.add(expire)
         });
 
-        emit LogDeposited(msg.sender, _commission, finalValue);
+        emit LogDeposited(msg.sender, commission, finalValue);
 
         return true;
     }
