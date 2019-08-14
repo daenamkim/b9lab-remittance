@@ -10,7 +10,6 @@ contract Remittance is Killable {
 
     struct BalanceStruct {
         address from;
-        uint commission;
         uint value;
         uint expire;
     }
@@ -24,7 +23,7 @@ contract Remittance is Killable {
     }
 
     event LogDeposited(address indexed sender, uint commission, uint depositedValue);
-    event LogRedeemed(address indexed redeemer, uint commission, uint redeemedValue);
+    event LogRedeemed(address indexed redeemer, uint redeemedValue);
     event LogRefunded(address indexed recipient, uint value);
     event LogSetCommission(address indexed owner, uint newCommission);
     event LogWithdrawedCommissionCollected(address indexed owner, uint commissionCollected);
@@ -50,7 +49,6 @@ contract Remittance is Killable {
         _commissionCollected = _commissionCollected.add(_commission);
         balances[hash] = BalanceStruct({
             from: msg.sender,
-            commission: _commission,
             value: finalValue,
             // TODO: security/no-block-members: Avoid using 'block.timestamp'.
             expire: block.timestamp.add(expire)
@@ -64,13 +62,12 @@ contract Remittance is Killable {
     function redeem(bytes32 secretRecipient) external whenNotPaused whenNotKilled returns (bool) {
         bytes32 hash = generateHash(secretRecipient, msg.sender);
         uint value = balances[hash].value;
-        uint commission = balances[hash].commission;
         uint expire = balances[hash].expire;
         require(expire > block.timestamp, "Balance must not be expired");
 
         balances[hash].value = 0;
 
-        emit LogRedeemed(msg.sender, commission, value);
+        emit LogRedeemed(msg.sender, value);
 
         // send ether to exchange shop's owner
         msg.sender.transfer(value);
