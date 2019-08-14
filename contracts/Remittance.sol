@@ -27,8 +27,6 @@ contract Remittance is Killable {
     event LogDeposited(address indexed sender, uint commission, uint depositedValue);
     event LogRedeemed(address indexed redeemer, uint commission, uint redeemedValue);
     event LogRefunded(address indexed recipient, uint value);
-    event LogKilled(address indexed owner);
-    event LogNotifiedBeforeSelfdesctruct(string indexed message);
     event LogSetCommission(address indexed owner, uint newCommission);
 
     function generateHash(
