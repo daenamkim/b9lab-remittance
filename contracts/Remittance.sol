@@ -106,7 +106,7 @@ contract Remittance is Killable {
         return true;
     }
 
-    function getCommission() public view onlyOwner returns (uint) {
+    function getCommission() public view returns (uint) {
         return _commission;
     }
 
