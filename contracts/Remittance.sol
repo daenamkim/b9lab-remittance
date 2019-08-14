@@ -25,7 +25,7 @@ contract Remittance is Killable {
     event LogDeposited(address indexed sender, uint commission, uint depositedValue);
     event LogRedeemed(address indexed redeemer, uint redeemedValue);
     event LogRefunded(address indexed recipient, uint value);
-    event LogSetCommission(address indexed owner, uint newCommission);
+    event LogCommissionSet(address indexed owner, uint newCommission);
     event LogWithdrawedCommissionCollected(address indexed owner, uint commissionCollected);
 
     function generateHash(
@@ -106,14 +106,14 @@ contract Remittance is Killable {
         return true;
     }
 
-    function getCommission() public view onlyOwner whenNotPaused returns (uint) {
+    function getCommission() public view onlyOwner returns (uint) {
         return _commission;
     }
 
-    function setCommission(uint newCommission) public onlyOwner whenNotPaused whenNotKilled returns (bool) {
+    function setCommission(uint newCommission) public onlyOwner whenNotKilled returns (bool) {
         _commission = newCommission;
 
-        emit LogSetCommission(msg.sender, newCommission);
+        emit LogCommissionSet(msg.sender, newCommission);
 
         return true;
     }
