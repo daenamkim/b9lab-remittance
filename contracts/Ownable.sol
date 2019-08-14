@@ -10,7 +10,7 @@ contract Ownable {
 
     event LogOwnerCandidateRequestd(address indexed owner, address candidate);
     event LogOwnerCandidateAccepted(address indexed ownerNew);
-    event LogOwnerCandidateRevoked(address indexed owner);
+    event LogOwnerCandidateRevoked(address indexed candidateRevoked);
 
     modifier onlyOwner() {
         require(msg.sender == _owner, "Should be only owner");
@@ -48,9 +48,9 @@ contract Ownable {
     }
 
     function revokeOwnerCandidate() public onlyOwner returns (bool) {
-        _ownerCandidate = address(0);
+        emit LogOwnerCandidateRevoked(_ownerCandidate);
 
-        emit LogOwnerCandidateRevoked(msg.sender);
+        _ownerCandidate = address(0);
 
         return true;
     }
