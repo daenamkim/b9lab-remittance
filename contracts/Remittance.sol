@@ -26,7 +26,7 @@ contract Remittance is Killable {
     event LogRedeemed(address indexed redeemer, uint redeemedValue);
     event LogRefunded(address indexed recipient, uint value);
     event LogCommissionSet(address indexed owner, uint newCommission);
-    event LogWithdrawedCommissionCollected(address indexed owner, uint commissionCollected);
+    event LogCommissionCollectedWithdrawed(address indexed owner, uint commissionCollected);
 
     function generateHash(
         bytes32 secretRecipient,
@@ -101,7 +101,7 @@ contract Remittance is Killable {
         _commissionCollected = 0;
         msg.sender.transfer(value);
 
-        emit LogWithdrawedCommissionCollected(msg.sender, value);
+        emit LogCommissionCollectedWithdrawed(msg.sender, value);
 
         return true;
     }
