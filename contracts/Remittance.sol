@@ -17,8 +17,7 @@ contract Remittance is Killable {
     mapping (bytes32 => BalanceStruct) public balances;
 
     uint private _commission;
-    uint private _commissionTotal;
-    uint private _balanceTotal;
+    uint private _commissionCollected;
 
     constructor() public {
         _commission = 1000;
@@ -28,6 +27,7 @@ contract Remittance is Killable {
     event LogRedeemed(address indexed redeemer, uint commission, uint redeemedValue);
     event LogRefunded(address indexed recipient, uint value);
     event LogSetCommission(address indexed owner, uint newCommission);
+    event LogWithdrawedCommissionCollected(address indexed owner, uint commissionCollected);
 
     function generateHash(
         bytes32 secretRecipient,
@@ -47,8 +47,7 @@ contract Remittance is Killable {
 
         // Pre-deduction for commission because changed commission will be a problem on redeem()
         uint finalValue = msg.value.sub(_commission);
-        _balanceTotal = _balanceTotal.add(finalValue);
-        _commissionTotal = _commissionTotal.add(_commission);
+        _commissionCollected = _commissionCollected.add(_commission);
         balances[hash] = BalanceStruct({
             from: msg.sender,
             commission: _commission,
@@ -69,7 +68,6 @@ contract Remittance is Killable {
         uint expire = balances[hash].expire;
         require(expire > block.timestamp, "Balance must not be expired");
 
-        _balanceTotal = _balanceTotal.sub(value);
         balances[hash].value = 0;
 
         emit LogRedeemed(msg.sender, commission, value);
@@ -95,12 +93,20 @@ contract Remittance is Killable {
         return true;
     }
 
-    function getBalanceTotal() public view onlyOwner returns (uint) {
-        return _balanceTotal;
+    function getCommissionCollected() public view onlyOwner returns (uint) {
+        return _commissionCollected;
     }
 
-    function getCommissionTotal() public view onlyOwner returns (uint) {
-        return _commissionTotal;
+    function withdrawCommissionCollected() public onlyOwner returns (bool) {
+        uint value = _commissionCollected;
+        require(value > 0, "Commission must be bigger than 0");
+
+        _commissionCollected = 0;
+        msg.sender.transfer(value);
+
+        emit LogWithdrawedCommissionCollected(msg.sender, value);
+
+        return true;
     }
 
     function getCommission() public view onlyOwner whenNotPaused returns (uint) {
