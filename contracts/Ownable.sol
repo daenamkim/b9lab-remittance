@@ -15,7 +15,7 @@ contract Ownable {
     modifier onlyOwner() {
         require(msg.sender == _owner, "Should be only owner");
 
-      _;
+        _;
     }
 
     function getOwner() public view returns (address) {
