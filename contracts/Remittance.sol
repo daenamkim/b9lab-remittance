@@ -65,11 +65,10 @@ contract Remittance is Killable {
         uint expire = balances[hash].expire;
         require(expire > block.timestamp, "Balance must not be expired");
 
-        balances[hash].value = 0;
-
         emit LogRedeemed(msg.sender, value);
 
         // send ether to exchange shop's owner
+        balances[hash].value = 0;
         msg.sender.transfer(value);
 
         return true;
@@ -82,10 +81,10 @@ contract Remittance is Killable {
         uint value = balances[hash].value;
         require(value > 0, "No balance to be refunded");
 
+        emit LogRefunded(msg.sender, value);
+
         balances[hash].value = 0;
         msg.sender.transfer(value);
-
-        emit LogRefunded(msg.sender, value);
 
         return true;
     }
@@ -98,10 +97,10 @@ contract Remittance is Killable {
         uint value = _commissionCollected;
         require(value > 0, "Commission must be bigger than 0");
 
+        emit LogCommissionCollectedWithdrawed(msg.sender, value);
+
         _commissionCollected = 0;
         msg.sender.transfer(value);
-
-        emit LogCommissionCollectedWithdrawed(msg.sender, value);
 
         return true;
     }
