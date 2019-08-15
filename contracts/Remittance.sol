@@ -43,7 +43,6 @@ contract Remittance is Killable {
         require(expire < EXPIRE_LIMIT, "Expire should be within 7 days");
         require(msg.value > commission, "Balance must be bigger than commission");
         require(hash != bytes32(0), "Hash must be valid");
-        require(balances[hash].value == 0, "Balance should be 0 for this hash");
         require(balances[hash].expire == 0, "Hash must not have been used before");
 
         // Pre-deduction for commission because changed commission will be a problem on redeem()
