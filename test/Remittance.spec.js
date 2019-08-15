@@ -2,7 +2,8 @@ const truffleAssert = require('truffle-assertions');
 const artifactRemittance = artifacts.require('Remittance.sol');
 
 contract('Remittance', accounts => {
-  const [alice, bob, carol] = accounts;
+  const [alice, bob, carol, ownerCandidate] = accounts;
+  const gas = '110000'; // gas limit
 
   let remittanceInstance;
   beforeEach('deploy a new Remittance contract', async () => {
@@ -18,27 +19,111 @@ contract('Remittance', accounts => {
     );
     assert.strictEqual(actual, expected);
   });
-  it.only('should return current commission', async () => {
+  it('should return current commission', async () => {
     const expected = 1000;
     const actual = await remittanceInstance.getCommission();
     assert.isTrue(actual.eqn(expected));
   });
-  it('should change owner', async () => {});
-  it('should avoid all users to writing to storage when it is paused', async () => {
+  it('should avoid a user not owner candidate to accept a new owner', async () => {
+    await remittanceInstance.requestOwnerCandidate(ownerCandidate, {
+      from: alice,
+      gas
+    });
+    await truffleAssert.fails(
+      remittanceInstance.acceptOwnerCandidate({
+        from: bob,
+        gas
+      }),
+      'Sender should be owner candidate'
+    );
+  });
+  it('should avoid request for new candidate multiple time', async () => {
+    await remittanceInstance.requestOwnerCandidate(ownerCandidate, {
+      from: alice,
+      gas
+    });
+    await truffleAssert.fails(
+      remittanceInstance.requestOwnerCandidate(ownerCandidate, {
+        from: alice,
+        gas
+      }),
+      'Owner candidate should not be set previously'
+    );
+  });
+  it('should avoid a owner withdraw commissions collected when the owner candidate is requested', async () => {
+    const tx = await remittanceInstance.createRemittance(
+      '0x0000000000000000000000000000000000000000000000000000000000000001',
+      '1000',
+      {
+        from: alice,
+        gas,
+        value: '1001'
+      }
+    );
+    await remittanceInstance.withdrawCommissionCollected({
+      from: alice,
+      gas
+    });
+    const commissionCollected = await remittanceInstance.getCommissionCollected();
+    assert.isTrue(commissionCollected.eqn(0));
+
+    await remittanceInstance.createRemittance(
+      '0x0000000000000000000000000000000000000000000000000000000000000002',
+      '1000',
+      {
+        from: alice,
+        gas,
+        value: '1001'
+      }
+    );
+    await remittanceInstance.requestOwnerCandidate(ownerCandidate, {
+      from: alice,
+      gas
+    });
+    await truffleAssert.fails(
+      remittanceInstance.withdrawCommissionCollected({
+        from: alice,
+        gas
+      }),
+      'Only owner candidate was not requested'
+    );
+  });
+  it('should change owner', async () => {
+    let ownerCurrent = await remittanceInstance.getOwner();
+    let ownerNew = await remittanceInstance.getOwnerCandidate();
+    assert.strictEqual(ownerCurrent, alice);
+    assert.strictEqual(ownerNew, '0x0000000000000000000000000000000000000000');
+
+    await remittanceInstance.requestOwnerCandidate(ownerCandidate, {
+      from: alice,
+      gas
+    });
+    ownerCurrent = await remittanceInstance.getOwner();
+    ownerNew = await remittanceInstance.getOwnerCandidate();
+    assert.strictEqual(ownerCurrent, alice);
+    assert.strictEqual(ownerCandidate, ownerNew);
+
+    await remittanceInstance.acceptOwnerCandidate({
+      from: ownerCandidate,
+      gas
+    });
+    ownerCurrent = await remittanceInstance.getOwner();
+    ownerNew = await remittanceInstance.getOwnerCandidate();
+    assert.strictEqual(ownerCurrent, ownerCandidate);
+    assert.strictEqual(ownerNew, '0x0000000000000000000000000000000000000000');
+  });
+  it.skip('should avoid all users to writing to storage when it is paused', async () => {
     // createRemittance
     // redeem
     // refund
   });
-  it('should avoid all users and owner to write to storage when it is killed', async () => {
+  it.skip('should avoid all users and owner to write to storage when it is killed', async () => {
     // createRemittance
     // redeem
     // setCommission
   });
-  it('should avoid all users not owner to access to collected commissions', async () => {
+  it.skip('should avoid all users not owner to access to collected commissions', async () => {
     // getCommissionCollected
-    // withdrawCommissionCollected
-  });
-  it('should avoid a owner withdraw commissions collected when the owner candidate is requested', async () => {
     // withdrawCommissionCollected
   });
 });
