@@ -24,13 +24,13 @@ contract Pausable is Ownable {
         _;
     }
 
-    function pause() public onlyOwner whenPaused {
+    function pause() public onlyOwner whenNotPaused {
         _paused = true;
 
         emit LogPaused(msg.sender);
     }
 
-    function unpause() public onlyOwner whenNotPaused {
+    function unpause() public onlyOwner whenPaused {
         _paused = false;
 
         emit LogUnpaused(msg.sender);
