@@ -19,7 +19,7 @@ contract Ownable {
     }
 
     modifier whenOwnerCandidateNotRequested {
-        require(_ownerCandidate == address(0), "Only owner canidate was not requested");
+        require(_ownerCandidate == address(0), "Only owner candidate was not requested");
 
         _;
     }
