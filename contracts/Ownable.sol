@@ -18,6 +18,12 @@ contract Ownable {
         _;
     }
 
+    modifier whenOwnerCandidateNotRequested {
+        require(_ownerCandidate == address(0), "Only owner canidate was not requested");
+
+        _;
+    }
+
     function getOwner() public view returns (address) {
         return _owner;
     }
@@ -41,6 +47,7 @@ contract Ownable {
         require(msg.sender == _ownerCandidate, "Sender should be owner candidate");
 
         _owner = msg.sender;
+        _ownerCandidate = address(0);
 
         emit LogOwnerCandidateAccepted(msg.sender);
 

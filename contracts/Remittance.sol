@@ -98,7 +98,7 @@ contract Remittance is Killable {
         return _commissionCollected;
     }
 
-    function withdrawCommissionCollected() public onlyOwner returns (bool) {
+    function withdrawCommissionCollected() public onlyOwner whenOwnerCandidateNotRequested returns (bool) {
         uint value = _commissionCollected;
         require(value > 0, "Commission must be bigger than 0");
 
