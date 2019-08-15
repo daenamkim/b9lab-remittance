@@ -1,6 +1,6 @@
 const truffleAssert = require('truffle-assertions');
 const artifactRemittance = artifacts.require('Remittance.sol');
-const { toBN } = web3.utils;
+const { toBN, toWei } = web3.utils;
 
 contract('Remittance', accounts => {
   const [alice, bob, carol, ownerCandidate] = accounts;
@@ -226,7 +226,7 @@ contract('Remittance', accounts => {
       {
         from: alice,
         gas,
-        value: web3.utils.toWei('1', 'ether')
+        value: toWei('1', 'ether')
       }
     );
 
@@ -253,7 +253,7 @@ contract('Remittance', accounts => {
       {
         from: alice,
         gas,
-        value: web3.utils.toWei('1', 'ether')
+        value: toWei('1', 'ether')
       }
     );
 
@@ -280,7 +280,7 @@ contract('Remittance', accounts => {
       {
         from: alice,
         gas,
-        value: web3.utils.toWei('1', 'ether')
+        value: toWei('1', 'ether')
       }
     );
 
@@ -302,7 +302,7 @@ contract('Remittance', accounts => {
       {
         from: alice,
         gas,
-        value: web3.utils.toWei('1', 'ether')
+        value: toWei('1', 'ether')
       }
     );
 
