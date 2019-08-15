@@ -33,7 +33,7 @@ contract Ownable {
     }
 
     function requestOwnerCandidate(address ownerCandidate) public onlyOwner returns (bool) {
-        require(ownerCandidate == address(0), "Owner candicate should not be set previously");
+        require(ownerCandidate == address(0), "Owner candidate should not be set previously");
 
         _ownerCandidate = ownerCandidate;
 
