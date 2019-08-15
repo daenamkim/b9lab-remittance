@@ -167,10 +167,40 @@ contract('Remittance', accounts => {
       'Should not be paused'
     );
   });
-  it.skip('should avoid all users and owner to write to storage when it is killed', async () => {
-    // createRemittance
-    // redeem
-    // setCommission
+  it.only('should avoid all users and owner to write to storage when it is killed', async () => {
+    remittanceInstance.kill({
+      from: alice,
+      gas
+    });
+    await truffleAssert.fails(
+      remittanceInstance.createRemittance(
+        '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f',
+        '1000',
+        {
+          from: alice,
+          gas,
+          value: '1001'
+        }
+      ),
+      'Should not be killed'
+    );
+    await truffleAssert.fails(
+      remittanceInstance.redeem(
+        '0x0000000000000000000000000000000000000000000000000000000000000001',
+        {
+          from: carol,
+          gas
+        }
+      ),
+      'Should not be killed'
+    );
+    await truffleAssert.fails(
+      remittanceInstance.setCommission('1500', {
+        from: alice,
+        gas
+      }),
+      'Should not be killed'
+    );
   });
   it.skip('should avoid all users not owner to access to collected commissions', async () => {
     // getCommissionCollected
