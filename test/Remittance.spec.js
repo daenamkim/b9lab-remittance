@@ -68,7 +68,7 @@ contract('Remittance', accounts => {
     );
   });
   it('should avoid a owner withdraw commissions collected when the owner candidate is requested', async () => {
-    const tx = await remittanceInstance.createRemittance(
+    await remittanceInstance.createRemittance(
       '0x0000000000000000000000000000000000000000000000000000000000000001',
       '1000',
       {
@@ -129,10 +129,43 @@ contract('Remittance', accounts => {
     assert.strictEqual(ownerCurrent, ownerCandidate);
     assert.strictEqual(ownerNew, '0x0000000000000000000000000000000000000000');
   });
-  it.skip('should avoid all users to writing to storage when it is paused', async () => {
-    // createRemittance
-    // redeem
-    // refund
+  it('should avoid all users to writing to storage when it is paused', async () => {
+    remittanceInstance.pause({
+      from: alice,
+      gas
+    });
+    await truffleAssert.fails(
+      remittanceInstance.createRemittance(
+        '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f',
+        '1000',
+        {
+          from: alice,
+          gas,
+          value: '1001'
+        }
+      ),
+      'Should not be paused'
+    );
+    await truffleAssert.fails(
+      remittanceInstance.redeem(
+        '0x0000000000000000000000000000000000000000000000000000000000000001',
+        {
+          from: carol,
+          gas
+        }
+      ),
+      'Should not be paused'
+    );
+    await truffleAssert.fails(
+      remittanceInstance.refund(
+        '0x0000000000000000000000000000000000000000000000000000000000000003',
+        {
+          from: alice,
+          gas
+        }
+      ),
+      'Should not be paused'
+    );
   });
   it.skip('should avoid all users and owner to write to storage when it is killed', async () => {
     // createRemittance
