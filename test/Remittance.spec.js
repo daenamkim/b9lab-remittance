@@ -167,7 +167,7 @@ contract('Remittance', accounts => {
       'Should not be paused'
     );
   });
-  it.only('should avoid all users and owner to write to storage when it is killed', async () => {
+  it('should avoid all users and owner to write to storage when it is killed', async () => {
     remittanceInstance.kill({
       from: alice,
       gas
@@ -202,9 +202,21 @@ contract('Remittance', accounts => {
       'Should not be killed'
     );
   });
-  it.skip('should avoid all users not owner to access to collected commissions', async () => {
-    // getCommissionCollected
-    // withdrawCommissionCollected
+  it('should avoid all users not owner to access to collected commissions', async () => {
+    await truffleAssert.fails(
+      remittanceInstance.getCommissionCollected({
+        from: bob,
+        gas
+      }),
+      'Should be only owner'
+    );
+    await truffleAssert.fails(
+      remittanceInstance.withdrawCommissionCollected({
+        from: bob,
+        gas
+      }),
+      'Should be only owner'
+    );
   });
   it.skip('should deposit money and redeem from exchange shop owner successfully', async () => {
     // remittance
