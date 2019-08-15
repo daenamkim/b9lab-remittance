@@ -273,5 +273,65 @@ contract('Remittance', accounts => {
       'No commission collected to withdraw'
     );
   });
-  it.skip('should refund deposited successfully', async () => {});
+  it('should avoid users to refund before expire', async () => {
+    await remittanceInstance.createRemittance(
+      '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f',
+      '1000',
+      {
+        from: alice,
+        gas,
+        value: web3.utils.toWei('1', 'ether')
+      }
+    );
+
+    await truffleAssert.fails(
+      remittanceInstance.refund(
+        '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f',
+        {
+          from: alice,
+          gas
+        }
+      ),
+      "Can't refund until expired"
+    );
+  });
+  it('should refund deposited successfully', async () => {
+    await remittanceInstance.createRemittance(
+      '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f',
+      '0',
+      {
+        from: alice,
+        gas,
+        value: web3.utils.toWei('1', 'ether')
+      }
+    );
+
+    await new Promise(resolve => {
+      setTimeout(() => {
+        resolve();
+      }, 1000);
+    });
+
+    const balanceAliceBefore = await web3.eth.getBalance(alice);
+    await remittanceInstance.refund(
+      '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f',
+      {
+        from: alice,
+        gas
+      }
+    );
+    const balanceAliceAfter = await web3.eth.getBalance(alice);
+    assert.isTrue(toBN(balanceAliceAfter).gt(balanceAliceBefore));
+
+    await truffleAssert.fails(
+      remittanceInstance.refund(
+        '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f',
+        {
+          from: alice,
+          gas
+        }
+      ),
+      'No balance to be refunded'
+    );
+  });
 });
