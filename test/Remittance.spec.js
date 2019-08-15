@@ -229,6 +229,7 @@ contract('Remittance', accounts => {
         value: web3.utils.toWei('1', 'ether')
       }
     );
+
     const balanceCarolBefore = await web3.eth.getBalance(carol);
     await remittanceInstance.redeem(
       '0x0000000000000000000000000000000000000000000000000000000000000001',
@@ -236,6 +237,7 @@ contract('Remittance', accounts => {
     );
     const balanceCarolAfter = await web3.eth.getBalance(carol);
     assert.isTrue(toBN(balanceCarolAfter).gt(balanceCarolBefore));
+
     await truffleAssert.fails(
       remittanceInstance.redeem(
         '0x0000000000000000000000000000000000000000000000000000000000000001',
@@ -244,6 +246,32 @@ contract('Remittance', accounts => {
       'No balance to redeem'
     );
   });
-  it.skip('should withdraw commission collected successfully', async () => {});
+  it('should withdraw commission collected successfully', async () => {
+    await remittanceInstance.createRemittance(
+      '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f',
+      '1000',
+      {
+        from: alice,
+        gas,
+        value: web3.utils.toWei('1', 'ether')
+      }
+    );
+
+    const balanceAliceBefore = await web3.eth.getBalance(alice);
+    await remittanceInstance.withdrawCommissionCollected({
+      from: alice,
+      gas
+    });
+    const balanceAliceAfter = await web3.eth.getBalance(alice);
+    assert.isTrue(toBN(balanceAliceAfter).gt(balanceAliceBefore));
+
+    await truffleAssert.fails(
+      remittanceInstance.withdrawCommissionCollected({
+        from: alice,
+        gas
+      }),
+      'No commission collected to withdraw'
+    );
+  });
   it.skip('should refund deposited successfully', async () => {});
 });
