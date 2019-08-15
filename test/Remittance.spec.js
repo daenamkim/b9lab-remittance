@@ -37,7 +37,7 @@ contract('Remittance', accounts => {
       'Sender should be owner candidate'
     );
   });
-  it('should avoid request for new candidate multiple time', async () => {
+  it('should avoid to request for new candidate multiple times', async () => {
     await remittanceInstance.requestOwnerCandidate(ownerCandidate, {
       from: alice,
       gas
@@ -48,6 +48,23 @@ contract('Remittance', accounts => {
         gas
       }),
       'Owner candidate should not be set previously'
+    );
+  });
+  it('should avoid to accept new owner request multiple times', async () => {
+    await remittanceInstance.requestOwnerCandidate(ownerCandidate, {
+      from: alice,
+      gas
+    });
+    await remittanceInstance.acceptOwnerCandidate({
+      from: ownerCandidate,
+      gas
+    });
+    await truffleAssert.fails(
+      remittanceInstance.acceptOwnerCandidate({
+        from: ownerCandidate,
+        gas
+      }),
+      'Sender should be owner candidate'
     );
   });
   it('should avoid a owner withdraw commissions collected when the owner candidate is requested', async () => {
@@ -125,5 +142,9 @@ contract('Remittance', accounts => {
   it.skip('should avoid all users not owner to access to collected commissions', async () => {
     // getCommissionCollected
     // withdrawCommissionCollected
+  });
+  it.skip('should deposit money and redeem from exchange shop owner successfully', async () => {
+    // remittance
+    // redeem
   });
 });
