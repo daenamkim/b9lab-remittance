@@ -6,14 +6,6 @@ contract('Remittance', accounts => {
   const [alice, bob, carol, ownerCandidate] = accounts;
   const gas = '110000'; // gas limit
 
-  // TODO: I have not idea why 'should redeem from exchange shop owner successfully' fails
-  // but I created a different instance not in beforeEach it was fine.
-  // Is this a bug?
-  let remittanceInstanceForRedeem;
-  before(async () => {
-    remittanceInstanceForRedeem = await artifactRemittance.new({ from: alice });
-  });
-
   let remittanceInstance;
   beforeEach('deploy a new Remittance contract', async () => {
     remittanceInstance = await artifactRemittance.new({ from: alice });
@@ -21,7 +13,7 @@ contract('Remittance', accounts => {
 
   it('should return a hash', async () => {
     const expected =
-      '0xe937e483003b2a536140d2423b90c995ba1f9ed80eec9bd75597db03fe5b6c84';
+      '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f';
     const actual = await remittanceInstance.generateHash(
       '0x0000000000000000000000000000000000000000000000000000000000000001',
       carol
@@ -228,18 +220,18 @@ contract('Remittance', accounts => {
     );
   });
   it('should redeem from exchange shop owner successfully', async () => {
-    await remittanceInstanceForRedeem.createRemittance(
-      '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f',
-      '1000',
-      {
-        from: alice,
-        gas,
-        value: toWei('1', 'ether')
-      }
+    const hash = await remittanceInstance.generateHash(
+      '0x0000000000000000000000000000000000000000000000000000000000000001',
+      carol
     );
+    await remittanceInstance.createRemittance(hash, '1000', {
+      from: alice,
+      gas,
+      value: toWei('1', 'ether')
+    });
 
     const balanceCarolBefore = await web3.eth.getBalance(carol);
-    await remittanceInstanceForRedeem.redeem(
+    await remittanceInstance.redeem(
       '0x0000000000000000000000000000000000000000000000000000000000000001',
       { from: carol, gas }
     );
@@ -247,7 +239,7 @@ contract('Remittance', accounts => {
     assert.isTrue(toBN(balanceCarolAfter).gt(balanceCarolBefore));
 
     await truffleAssert.fails(
-      remittanceInstanceForRedeem.redeem(
+      remittanceInstance.redeem(
         '0x0000000000000000000000000000000000000000000000000000000000000001',
         { from: carol, gas }
       ),
