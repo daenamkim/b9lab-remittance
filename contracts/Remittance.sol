@@ -79,6 +79,9 @@ contract Remittance is Killable {
     function refund(bytes32 hash) public whenNotPaused returns (bool) {
         require(balances[hash].from == msg.sender, "From address must be equal to msg.sender");
 
+        uint expire = balances[hash].expire;
+        require(expire < block.timestamp, "Can't refund until expired");
+
         uint value = balances[hash].value;
         require(value > 0, "No balance to be refunded");
 
