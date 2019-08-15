@@ -1,5 +1,6 @@
 const truffleAssert = require('truffle-assertions');
 const artifactRemittance = artifacts.require('Remittance.sol');
+const { toBN } = web3.utils;
 
 contract('Remittance', accounts => {
   const [alice, bob, carol, ownerCandidate] = accounts;
@@ -218,8 +219,31 @@ contract('Remittance', accounts => {
       'Should be only owner'
     );
   });
-  it.skip('should deposit money and redeem from exchange shop owner successfully', async () => {
-    // remittance
-    // redeem
+  it('should redeem from exchange shop owner successfully', async () => {
+    await remittanceInstance.createRemittance(
+      '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f',
+      '1000',
+      {
+        from: alice,
+        gas,
+        value: web3.utils.toWei('1', 'ether')
+      }
+    );
+    const balanceCarolBefore = await web3.eth.getBalance(carol);
+    await remittanceInstance.redeem(
+      '0x0000000000000000000000000000000000000000000000000000000000000001',
+      { from: carol, gas }
+    );
+    const balanceCarolAfter = await web3.eth.getBalance(carol);
+    assert.isTrue(toBN(balanceCarolAfter).gt(balanceCarolBefore));
+    await truffleAssert.fails(
+      remittanceInstance.redeem(
+        '0x0000000000000000000000000000000000000000000000000000000000000001',
+        { from: carol, gas }
+      ),
+      'No balance to redeem'
+    );
   });
+  it.skip('should withdraw commission collected successfully', async () => {});
+  it.skip('should refund deposited successfully', async () => {});
 });

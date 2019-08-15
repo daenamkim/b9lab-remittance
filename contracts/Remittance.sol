@@ -64,6 +64,7 @@ contract Remittance is Killable {
         bytes32 hash = generateHash(secretRecipient, msg.sender);
         uint value = balances[hash].value;
         uint expire = balances[hash].expire;
+        require(value > 0, "No balance to redeem");
         require(expire > block.timestamp, "Balance must not be expired");
 
         emit LogRedeemed(msg.sender, value);
