@@ -21,9 +21,8 @@ contract('Remittance', accounts => {
   });
 
   it('should return current commission', async () => {
-    const expected = 1000;
     const actual = await remittanceInstance.getCommission();
-    assert.strictEqual(actual.toString(), toBN(expected).toString());
+    assert.strictEqual(actual.toString(), toBN(1000).toString());
   });
 
   it('should avoid a user not owner candidate to accept a new owner', async () => {
@@ -78,7 +77,7 @@ contract('Remittance', accounts => {
       from: alice
     });
     const commissionCollected = await remittanceInstance.getCommissionCollected();
-    assert.isTrue(commissionCollected.eqn(0));
+    assert.strictEqual(commissionCollected.toString(), '0');
 
     await remittanceInstance.createRemittance(
       '0x0000000000000000000000000000000000000000000000000000000000000002',
