@@ -105,17 +105,30 @@ contract('Remittance', accounts => {
     assert.strictEqual(ownerCurrent, alice);
     assert.strictEqual(ownerNew, '0x0000000000000000000000000000000000000000');
 
-    await remittanceInstance.requestOwnerCandidate(ownerCandidate, {
-      from: alice
-    });
+    const resultRequest = await remittanceInstance.requestOwnerCandidate(
+      ownerCandidate,
+      {
+        from: alice
+      }
+    );
+    assert.strictEqual(
+      resultRequest.logs[0].event,
+      'LogOwnerCandidateRequested'
+    );
+    assert.strictEqual(resultRequest.logs[0].args.owner, alice);
+    assert.strictEqual(resultRequest.logs[0].args.candidate, ownerCandidate);
+
     ownerCurrent = await remittanceInstance.getOwner();
     ownerNew = await remittanceInstance.getOwnerCandidate();
     assert.strictEqual(ownerCurrent, alice);
-    assert.strictEqual(ownerCandidate, ownerNew);
+    assert.strictEqual(ownerNew, ownerCandidate);
 
-    await remittanceInstance.acceptOwnerCandidate({
+    const resultAccept = await remittanceInstance.acceptOwnerCandidate({
       from: ownerCandidate
     });
+    assert.strictEqual(resultAccept.logs[0].event, 'LogOwnerCandidateAccepted');
+    assert.strictEqual(resultAccept.logs[0].args.ownerNew, ownerCandidate);
+
     ownerCurrent = await remittanceInstance.getOwner();
     ownerNew = await remittanceInstance.getOwnerCandidate();
     assert.strictEqual(ownerCurrent, ownerCandidate);
@@ -209,16 +222,43 @@ contract('Remittance', accounts => {
       '0x0000000000000000000000000000000000000000000000000000000000000001',
       carol
     );
-    await remittanceInstance.createRemittance(hash, '1000', {
-      from: alice,
-      value: toWei('1', 'ether')
-    });
+    const commission = await remittanceInstance.getCommission();
+    const resultDeposit = await remittanceInstance.createRemittance(
+      hash,
+      '1000',
+      {
+        from: alice,
+        value: toWei('1', 'ether')
+      }
+    );
+    assert.strictEqual(resultDeposit.logs[0].event, 'LogDeposited');
+    assert.strictEqual(resultDeposit.logs[0].args.sender, alice);
+    assert.strictEqual(
+      resultDeposit.logs[0].args.commission.toString(),
+      '1000'
+    );
+
+    assert.strictEqual(
+      resultDeposit.logs[0].args.depositedValue.toString(),
+      toBN(toWei('1', 'ether'))
+        .sub(commission)
+        .toString()
+    );
 
     const balanceCarolBefore = await web3.eth.getBalance(carol);
-    await remittanceInstance.redeem(
+    const resultRedeem = await remittanceInstance.redeem(
       '0x0000000000000000000000000000000000000000000000000000000000000001',
       { from: carol }
     );
+    assert.strictEqual(resultRedeem.logs[0].event, 'LogRedeemed');
+    assert.strictEqual(resultRedeem.logs[0].args.redeemer, carol);
+    assert.strictEqual(
+      resultRedeem.logs[0].args.redeemedValue.toString(),
+      toBN(toWei('1', 'ether'))
+        .sub(commission)
+        .toString()
+    );
+
     const balanceCarolAfter = await web3.eth.getBalance(carol);
     assert.isTrue(toBN(balanceCarolAfter).gt(balanceCarolBefore));
 
@@ -242,9 +282,21 @@ contract('Remittance', accounts => {
     );
 
     const balanceAliceBefore = await web3.eth.getBalance(alice);
-    await remittanceInstance.withdrawCommissionCollected({
-      from: alice
-    });
+    const resultWithdraw = await remittanceInstance.withdrawCommissionCollected(
+      {
+        from: alice
+      }
+    );
+    assert.strictEqual(
+      resultWithdraw.logs[0].event,
+      'LogCommissionCollectedWithdrew'
+    );
+    assert.strictEqual(resultWithdraw.logs[0].args.owner, alice);
+    assert.strictEqual(
+      resultWithdraw.logs[0].args.commissionCollected.toString(),
+      '1000'
+    );
+
     const balanceAliceAfter = await web3.eth.getBalance(alice);
     assert.isTrue(toBN(balanceAliceAfter).gt(balanceAliceBefore));
 
@@ -278,6 +330,7 @@ contract('Remittance', accounts => {
   });
 
   it('should refund deposited successfully', async () => {
+    const commission = await remittanceInstance.getCommission();
     await remittanceInstance.createRemittance(
       '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f',
       '0',
@@ -294,12 +347,21 @@ contract('Remittance', accounts => {
     });
 
     const balanceAliceBefore = await web3.eth.getBalance(alice);
-    await remittanceInstance.refund(
+    const resultRefund = await remittanceInstance.refund(
       '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f',
       {
         from: alice
       }
     );
+    assert.strictEqual(resultRefund.logs[0].event, 'LogRefunded');
+    assert.strictEqual(resultRefund.logs[0].args.recipient, alice);
+    assert.strictEqual(
+      resultRefund.logs[0].args.value.toString(),
+      toBN(toWei('1', 'ether'))
+        .sub(commission)
+        .toString()
+    );
+
     const balanceAliceAfter = await web3.eth.getBalance(alice);
     assert.isTrue(toBN(balanceAliceAfter).gt(balanceAliceBefore));
 
