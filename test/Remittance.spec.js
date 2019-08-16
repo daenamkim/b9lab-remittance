@@ -20,11 +20,13 @@ contract('Remittance', accounts => {
     );
     assert.strictEqual(actual, expected);
   });
+
   it('should return current commission', async () => {
     const expected = 1000;
     const actual = await remittanceInstance.getCommission();
     assert.isTrue(actual.eqn(expected));
   });
+
   it('should avoid a user not owner candidate to accept a new owner', async () => {
     await remittanceInstance.requestOwnerCandidate(ownerCandidate, {
       from: alice,
@@ -38,6 +40,7 @@ contract('Remittance', accounts => {
       'Sender should be owner candidate'
     );
   });
+
   it('should avoid to request for new candidate multiple times', async () => {
     await remittanceInstance.requestOwnerCandidate(ownerCandidate, {
       from: alice,
@@ -51,6 +54,7 @@ contract('Remittance', accounts => {
       'Owner candidate should not be set previously'
     );
   });
+
   it('should avoid to accept new owner request multiple times', async () => {
     await remittanceInstance.requestOwnerCandidate(ownerCandidate, {
       from: alice,
@@ -68,6 +72,7 @@ contract('Remittance', accounts => {
       'Sender should be owner candidate'
     );
   });
+
   it('should avoid a owner withdraw commissions collected when the owner candidate is requested', async () => {
     await remittanceInstance.createRemittance(
       '0x0000000000000000000000000000000000000000000000000000000000000001',
@@ -106,6 +111,7 @@ contract('Remittance', accounts => {
       'Only owner candidate was not requested'
     );
   });
+
   it('should change owner', async () => {
     let ownerCurrent = await remittanceInstance.getOwner();
     let ownerNew = await remittanceInstance.getOwnerCandidate();
@@ -130,6 +136,7 @@ contract('Remittance', accounts => {
     assert.strictEqual(ownerCurrent, ownerCandidate);
     assert.strictEqual(ownerNew, '0x0000000000000000000000000000000000000000');
   });
+
   it('should avoid all users to writing to storage when it is paused', async () => {
     remittanceInstance.pause({
       from: alice,
@@ -168,6 +175,7 @@ contract('Remittance', accounts => {
       'Should not be paused'
     );
   });
+
   it('should avoid all users and owner to write to storage when it is killed', async () => {
     remittanceInstance.kill({
       from: alice,
@@ -203,6 +211,7 @@ contract('Remittance', accounts => {
       'Should not be killed'
     );
   });
+
   it('should avoid all users not owner to access to collected commissions', async () => {
     await truffleAssert.fails(
       remittanceInstance.getCommissionCollected({
@@ -219,6 +228,7 @@ contract('Remittance', accounts => {
       'Should be only owner'
     );
   });
+
   it('should redeem from exchange shop owner successfully', async () => {
     const hash = await remittanceInstance.generateHash(
       '0x0000000000000000000000000000000000000000000000000000000000000001',
@@ -246,6 +256,7 @@ contract('Remittance', accounts => {
       'No balance to redeem'
     );
   });
+
   it('should withdraw commission collected successfully', async () => {
     await remittanceInstance.createRemittance(
       '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f',
@@ -273,6 +284,7 @@ contract('Remittance', accounts => {
       'No commission collected to withdraw'
     );
   });
+
   it('should avoid users to refund before expire', async () => {
     await remittanceInstance.createRemittance(
       '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f',
@@ -295,6 +307,7 @@ contract('Remittance', accounts => {
       "Can't refund until expired"
     );
   });
+
   it('should refund deposited successfully', async () => {
     await remittanceInstance.createRemittance(
       '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f',
