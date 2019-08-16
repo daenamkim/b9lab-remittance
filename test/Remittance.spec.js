@@ -12,10 +12,10 @@ contract('Remittance', accounts => {
 
   it('should return a hash', async () => {
     const expected =
-      '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f';
+      '0x2d7f6eda67cc5a1e4dcbdf20c55fde1fdbfcc4f02fe5c289eff189a3177dcc3a';
     const actual = await remittanceInstance.generateHash(
       '0x0000000000000000000000000000000000000000000000000000000000000001',
-      carol
+      '0x0000000000000000000000000000000000000000'
     );
     assert.strictEqual(actual, expected);
   });
