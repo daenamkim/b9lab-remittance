@@ -307,6 +307,23 @@ contract('Remittance', accounts => {
     );
   });
 
+  it('should set commission successfully', async () => {
+    const commissionCurrent = await remittanceInstance.getCommission();
+    assert.strictEqual(commissionCurrent.toString(), '1000');
+
+    const result = await remittanceInstance.setCommission('1500', {
+      from: alice
+    });
+    const commissionNew = await remittanceInstance.getCommission();
+    assert.strictEqual(commissionNew.toString(), '1500');
+    assert.strictEqual(result.logs[0].event, 'LogCommissionSet');
+    assert.strictEqual(result.logs[0].args.owner, alice);
+    assert.strictEqual(
+      result.logs[0].args.newCommission.toString(),
+      commissionNew.toString()
+    );
+  });
+
   it('should avoid users to refund before expire', async () => {
     await remittanceInstance.createRemittance(
       '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f',
