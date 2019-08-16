@@ -23,7 +23,7 @@ contract('Remittance', accounts => {
   it('should return current commission', async () => {
     const expected = 1000;
     const actual = await remittanceInstance.getCommission();
-    assert.isTrue(actual.eqn(expected));
+    assert.strictEqual(actual.toString(), toBN(expected).toString());
   });
 
   it('should avoid a user not owner candidate to accept a new owner', async () => {
