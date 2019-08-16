@@ -8,7 +8,7 @@ contract Ownable {
         _owner = msg.sender;
     }
 
-    event LogOwnerCandidateRequestd(address indexed owner, address candidate);
+    event LogOwnerCandidateRequested(address indexed owner, address candidate);
     event LogOwnerCandidateAccepted(address indexed ownerNew);
     event LogOwnerCandidateRevoked(address indexed candidateRevoked);
 
@@ -37,7 +37,7 @@ contract Ownable {
 
         _ownerCandidate = ownerCandidate;
 
-        emit LogOwnerCandidateRequestd(msg.sender, ownerCandidate);
+        emit LogOwnerCandidateRequested(msg.sender, ownerCandidate);
 
         return true;
     }
