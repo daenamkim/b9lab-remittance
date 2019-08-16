@@ -4,7 +4,6 @@ const { toBN, toWei } = web3.utils;
 
 contract('Remittance', accounts => {
   const [alice, bob, carol, ownerCandidate] = accounts;
-  const gas = '110000'; // gas limit
 
   let remittanceInstance;
   beforeEach('deploy a new Remittance contract', async () => {
@@ -29,13 +28,11 @@ contract('Remittance', accounts => {
 
   it('should avoid a user not owner candidate to accept a new owner', async () => {
     await remittanceInstance.requestOwnerCandidate(ownerCandidate, {
-      from: alice,
-      gas
+      from: alice
     });
     await truffleAssert.fails(
       remittanceInstance.acceptOwnerCandidate({
-        from: bob,
-        gas
+        from: bob
       }),
       'Sender should be owner candidate'
     );
@@ -43,13 +40,11 @@ contract('Remittance', accounts => {
 
   it('should avoid to request for new candidate multiple times', async () => {
     await remittanceInstance.requestOwnerCandidate(ownerCandidate, {
-      from: alice,
-      gas
+      from: alice
     });
     await truffleAssert.fails(
       remittanceInstance.requestOwnerCandidate(ownerCandidate, {
-        from: alice,
-        gas
+        from: alice
       }),
       'Owner candidate should not be set previously'
     );
@@ -57,17 +52,14 @@ contract('Remittance', accounts => {
 
   it('should avoid to accept new owner request multiple times', async () => {
     await remittanceInstance.requestOwnerCandidate(ownerCandidate, {
-      from: alice,
-      gas
+      from: alice
     });
     await remittanceInstance.acceptOwnerCandidate({
-      from: ownerCandidate,
-      gas
+      from: ownerCandidate
     });
     await truffleAssert.fails(
       remittanceInstance.acceptOwnerCandidate({
-        from: ownerCandidate,
-        gas
+        from: ownerCandidate
       }),
       'Sender should be owner candidate'
     );
@@ -79,13 +71,11 @@ contract('Remittance', accounts => {
       '1000',
       {
         from: alice,
-        gas,
         value: '1001'
       }
     );
     await remittanceInstance.withdrawCommissionCollected({
-      from: alice,
-      gas
+      from: alice
     });
     const commissionCollected = await remittanceInstance.getCommissionCollected();
     assert.isTrue(commissionCollected.eqn(0));
@@ -95,18 +85,15 @@ contract('Remittance', accounts => {
       '1000',
       {
         from: alice,
-        gas,
         value: '1001'
       }
     );
     await remittanceInstance.requestOwnerCandidate(ownerCandidate, {
-      from: alice,
-      gas
+      from: alice
     });
     await truffleAssert.fails(
       remittanceInstance.withdrawCommissionCollected({
-        from: alice,
-        gas
+        from: alice
       }),
       'Only owner candidate was not requested'
     );
@@ -119,8 +106,7 @@ contract('Remittance', accounts => {
     assert.strictEqual(ownerNew, '0x0000000000000000000000000000000000000000');
 
     await remittanceInstance.requestOwnerCandidate(ownerCandidate, {
-      from: alice,
-      gas
+      from: alice
     });
     ownerCurrent = await remittanceInstance.getOwner();
     ownerNew = await remittanceInstance.getOwnerCandidate();
@@ -128,8 +114,7 @@ contract('Remittance', accounts => {
     assert.strictEqual(ownerCandidate, ownerNew);
 
     await remittanceInstance.acceptOwnerCandidate({
-      from: ownerCandidate,
-      gas
+      from: ownerCandidate
     });
     ownerCurrent = await remittanceInstance.getOwner();
     ownerNew = await remittanceInstance.getOwnerCandidate();
@@ -139,8 +124,7 @@ contract('Remittance', accounts => {
 
   it('should avoid all users to writing to storage when it is paused', async () => {
     remittanceInstance.pause({
-      from: alice,
-      gas
+      from: alice
     });
     await truffleAssert.fails(
       remittanceInstance.createRemittance(
@@ -148,7 +132,6 @@ contract('Remittance', accounts => {
         '1000',
         {
           from: alice,
-          gas,
           value: '1001'
         }
       ),
@@ -158,8 +141,7 @@ contract('Remittance', accounts => {
       remittanceInstance.redeem(
         '0x0000000000000000000000000000000000000000000000000000000000000001',
         {
-          from: carol,
-          gas
+          from: carol
         }
       ),
       'Should not be paused'
@@ -168,8 +150,7 @@ contract('Remittance', accounts => {
       remittanceInstance.refund(
         '0x0000000000000000000000000000000000000000000000000000000000000003',
         {
-          from: alice,
-          gas
+          from: alice
         }
       ),
       'Should not be paused'
@@ -178,8 +159,7 @@ contract('Remittance', accounts => {
 
   it('should avoid all users and owner to write to storage when it is killed', async () => {
     remittanceInstance.kill({
-      from: alice,
-      gas
+      from: alice
     });
     await truffleAssert.fails(
       remittanceInstance.createRemittance(
@@ -187,7 +167,6 @@ contract('Remittance', accounts => {
         '1000',
         {
           from: alice,
-          gas,
           value: '1001'
         }
       ),
@@ -197,16 +176,14 @@ contract('Remittance', accounts => {
       remittanceInstance.redeem(
         '0x0000000000000000000000000000000000000000000000000000000000000001',
         {
-          from: carol,
-          gas
+          from: carol
         }
       ),
       'Should not be killed'
     );
     await truffleAssert.fails(
       remittanceInstance.setCommission('1500', {
-        from: alice,
-        gas
+        from: alice
       }),
       'Should not be killed'
     );
@@ -215,15 +192,13 @@ contract('Remittance', accounts => {
   it('should avoid all users not owner to access to collected commissions', async () => {
     await truffleAssert.fails(
       remittanceInstance.getCommissionCollected({
-        from: bob,
-        gas
+        from: bob
       }),
       'Should be only owner'
     );
     await truffleAssert.fails(
       remittanceInstance.withdrawCommissionCollected({
-        from: bob,
-        gas
+        from: bob
       }),
       'Should be only owner'
     );
@@ -236,14 +211,13 @@ contract('Remittance', accounts => {
     );
     await remittanceInstance.createRemittance(hash, '1000', {
       from: alice,
-      gas,
       value: toWei('1', 'ether')
     });
 
     const balanceCarolBefore = await web3.eth.getBalance(carol);
     await remittanceInstance.redeem(
       '0x0000000000000000000000000000000000000000000000000000000000000001',
-      { from: carol, gas }
+      { from: carol }
     );
     const balanceCarolAfter = await web3.eth.getBalance(carol);
     assert.isTrue(toBN(balanceCarolAfter).gt(balanceCarolBefore));
@@ -251,7 +225,7 @@ contract('Remittance', accounts => {
     await truffleAssert.fails(
       remittanceInstance.redeem(
         '0x0000000000000000000000000000000000000000000000000000000000000001',
-        { from: carol, gas }
+        { from: carol }
       ),
       'No balance to redeem'
     );
@@ -263,23 +237,20 @@ contract('Remittance', accounts => {
       '1000',
       {
         from: alice,
-        gas,
         value: toWei('1', 'ether')
       }
     );
 
     const balanceAliceBefore = await web3.eth.getBalance(alice);
     await remittanceInstance.withdrawCommissionCollected({
-      from: alice,
-      gas
+      from: alice
     });
     const balanceAliceAfter = await web3.eth.getBalance(alice);
     assert.isTrue(toBN(balanceAliceAfter).gt(balanceAliceBefore));
 
     await truffleAssert.fails(
       remittanceInstance.withdrawCommissionCollected({
-        from: alice,
-        gas
+        from: alice
       }),
       'No commission collected to withdraw'
     );
@@ -291,7 +262,6 @@ contract('Remittance', accounts => {
       '1000',
       {
         from: alice,
-        gas,
         value: toWei('1', 'ether')
       }
     );
@@ -300,8 +270,7 @@ contract('Remittance', accounts => {
       remittanceInstance.refund(
         '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f',
         {
-          from: alice,
-          gas
+          from: alice
         }
       ),
       "Can't refund until expired"
@@ -314,7 +283,6 @@ contract('Remittance', accounts => {
       '0',
       {
         from: alice,
-        gas,
         value: toWei('1', 'ether')
       }
     );
@@ -329,8 +297,7 @@ contract('Remittance', accounts => {
     await remittanceInstance.refund(
       '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f',
       {
-        from: alice,
-        gas
+        from: alice
       }
     );
     const balanceAliceAfter = await web3.eth.getBalance(alice);
@@ -340,8 +307,7 @@ contract('Remittance', accounts => {
       remittanceInstance.refund(
         '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f',
         {
-          from: alice,
-          gas
+          from: alice
         }
       ),
       'No balance to be refunded'
