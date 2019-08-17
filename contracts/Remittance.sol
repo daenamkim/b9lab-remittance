@@ -43,7 +43,7 @@ contract Remittance is Killable {
         require(expire < EXPIRE_LIMIT, "Expire should be within 7 days");
         require(msg.value > commission, "Balance must be bigger than commission");
         require(hash != bytes32(0), "Hash must be valid");
-        require(balances[hash].expire == 0, "Hash must not have been used before");
+        require(balances[hash].from == address(0), "Hash must not have been used before");
 
         // Pre-deduction for commission because changed commission will be a problem on redeem()
         uint finalValue = msg.value.sub(commission);
@@ -69,6 +69,7 @@ contract Remittance is Killable {
 
         // send ether to exchange shop's owner
         balances[hash].value = 0;
+        balances[hash].expire = 0;
         msg.sender.transfer(value);
 
         return true;
@@ -85,6 +86,7 @@ contract Remittance is Killable {
         emit LogRefunded(msg.sender, value);
 
         balances[hash].value = 0;
+        balances[hash].expire = 0;
         msg.sender.transfer(value);
 
         return true;
