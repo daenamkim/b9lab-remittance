@@ -12,7 +12,7 @@ contract('Remittance', accounts => {
 
   it('should return a hash', async () => {
     const expected =
-      '0x2d7f6eda67cc5a1e4dcbdf20c55fde1fdbfcc4f02fe5c289eff189a3177dcc3a';
+      '0x402864001b206052188a4298cafde0220f3bc7964305ed5ea01acfaa3269a978';
     const actual = await remittanceInstance.generateHash(
       '0x0000000000000000000000000000000000000000000000000000000000000001',
       '0x0000000000000000000000000000000000000000'
@@ -23,45 +23,6 @@ contract('Remittance', accounts => {
   it('should return current commission', async () => {
     const actual = await remittanceInstance.getCommission();
     assert.strictEqual(actual.toString(), '1000');
-  });
-
-  it('should avoid a user not owner candidate to accept a new owner', async () => {
-    await remittanceInstance.requestOwnerCandidate(ownerCandidate, {
-      from: alice
-    });
-    await truffleAssert.fails(
-      remittanceInstance.acceptOwnerCandidate({
-        from: bob
-      }),
-      'Sender should be owner candidate'
-    );
-  });
-
-  it('should avoid to request for new candidate multiple times', async () => {
-    await remittanceInstance.requestOwnerCandidate(ownerCandidate, {
-      from: alice
-    });
-    await truffleAssert.fails(
-      remittanceInstance.requestOwnerCandidate(ownerCandidate, {
-        from: alice
-      }),
-      'Owner candidate should not be set previously'
-    );
-  });
-
-  it('should avoid to accept new owner request multiple times', async () => {
-    await remittanceInstance.requestOwnerCandidate(ownerCandidate, {
-      from: alice
-    });
-    await remittanceInstance.acceptOwnerCandidate({
-      from: ownerCandidate
-    });
-    await truffleAssert.fails(
-      remittanceInstance.acceptOwnerCandidate({
-        from: ownerCandidate
-      }),
-      'Sender should be owner candidate'
-    );
   });
 
   it('should avoid a owner withdraw commissions collected when the owner candidate is requested', async () => {
@@ -96,42 +57,6 @@ contract('Remittance', accounts => {
       }),
       'Only owner candidate was not requested'
     );
-  });
-
-  it('should change owner', async () => {
-    let ownerCurrent = await remittanceInstance.getOwner();
-    let ownerNew = await remittanceInstance.getOwnerCandidate();
-    assert.strictEqual(ownerCurrent, alice);
-    assert.strictEqual(ownerNew, '0x0000000000000000000000000000000000000000');
-
-    const resultRequest = await remittanceInstance.requestOwnerCandidate(
-      ownerCandidate,
-      {
-        from: alice
-      }
-    );
-    assert.strictEqual(
-      resultRequest.logs[0].event,
-      'LogOwnerCandidateRequested'
-    );
-    assert.strictEqual(resultRequest.logs[0].args.owner, alice);
-    assert.strictEqual(resultRequest.logs[0].args.candidate, ownerCandidate);
-
-    ownerCurrent = await remittanceInstance.getOwner();
-    ownerNew = await remittanceInstance.getOwnerCandidate();
-    assert.strictEqual(ownerCurrent, alice);
-    assert.strictEqual(ownerNew, ownerCandidate);
-
-    const resultAccept = await remittanceInstance.acceptOwnerCandidate({
-      from: ownerCandidate
-    });
-    assert.strictEqual(resultAccept.logs[0].event, 'LogOwnerCandidateAccepted');
-    assert.strictEqual(resultAccept.logs[0].args.ownerNew, ownerCandidate);
-
-    ownerCurrent = await remittanceInstance.getOwner();
-    ownerNew = await remittanceInstance.getOwnerCandidate();
-    assert.strictEqual(ownerCurrent, ownerCandidate);
-    assert.strictEqual(ownerNew, '0x0000000000000000000000000000000000000000');
   });
 
   it('should avoid all users to writing to storage when it is paused', async () => {
