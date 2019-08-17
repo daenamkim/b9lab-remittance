@@ -64,7 +64,6 @@ contract Remittance is Killable {
         bytes32 hash = generateHash(secretRecipient, msg.sender);
         uint value = balances[hash].value;
         require(value > 0, "No balance to redeem");
-        require(balances[hash].expire > block.timestamp, "Balance must not be expired");
 
         emit LogRedeemed(msg.sender, value);
 
@@ -78,7 +77,7 @@ contract Remittance is Killable {
     // Does not take commission for refund as a good service for users. :)
     function refund(bytes32 hash) public whenNotPaused returns (bool) {
         require(balances[hash].from == msg.sender, "From address must be equal to msg.sender");
-        require(balances[hash].expire < block.timestamp, "Can't refund until expired");
+        require(balances[hash].expire <= block.timestamp, "Can't refund until expired");
 
         uint value = balances[hash].value;
         require(value > 0, "No balance to be refunded");
