@@ -5,7 +5,7 @@ contract('Ownable', accounts => {
   const [alice, bob, ownerCandidate] = accounts;
 
   let ownableInstance;
-  beforeEach('deploy a new Remittance contract', async () => {
+  beforeEach('deploy a new Ownable contract', async () => {
     ownableInstance = await artifactOwnable.new({ from: alice });
   });
 
