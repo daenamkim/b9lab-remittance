@@ -25,6 +25,29 @@ contract('Remittance', accounts => {
     assert.strictEqual(actual.toString(), '1000');
   });
 
+  it('should avoid reusing same hash again', async () => {
+    await remittanceInstance.createRemittance(
+      '0x0000000000000000000000000000000000000000000000000000000000000001',
+      '1000',
+      {
+        from: alice,
+        value: '1001'
+      }
+    );
+
+    await truffleAssert.fails(
+      remittanceInstance.createRemittance(
+        '0x0000000000000000000000000000000000000000000000000000000000000001',
+        '1000',
+        {
+          from: alice,
+          value: '1001'
+        }
+      ),
+      'Hash must not have been used before'
+    );
+  });
+
   it('should avoid a owner withdraw commissions collected when the owner candidate is requested', async () => {
     await remittanceInstance.createRemittance(
       '0x0000000000000000000000000000000000000000000000000000000000000001',
