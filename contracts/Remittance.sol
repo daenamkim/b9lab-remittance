@@ -15,8 +15,8 @@ contract Remittance is Killable {
     }
     mapping (bytes32 => BalanceStruct) public balances;
 
+    mapping(address => uint) public commissions;
     uint private _commission;
-    uint private _commissionCollected;
 
     constructor() public {
         _commission = 1000;
@@ -45,9 +45,11 @@ contract Remittance is Killable {
         require(hash != bytes32(0), "Hash must be valid");
         require(balances[hash].from == address(0), "Hash must not have been used before");
 
+        address owner = getOwner();
+        commissions[owner] = commissions[owner].add(commission);
+
         // Pre-deduction for commission because changed commission will be a problem on redeem()
         uint finalValue = msg.value.sub(commission);
-        _commissionCollected = _commissionCollected.add(commission);
         balances[hash] = BalanceStruct({
             from: msg.sender,
             value: finalValue,
@@ -92,17 +94,13 @@ contract Remittance is Killable {
         return true;
     }
 
-    function getCommissionCollected() public view onlyOwner returns (uint) {
-        return _commissionCollected;
-    }
-
-    function withdrawCommissionCollected() public onlyOwner whenOwnerCandidateNotRequested returns (bool) {
-        uint value = _commissionCollected;
+    function withdrawCommissionCollected() public returns (bool) {
+        uint value = commissions[msg.sender];
         require(value > 0, "No commission collected to withdraw");
 
         emit LogCommissionCollectedWithdrew(msg.sender, value);
 
-        _commissionCollected = 0;
+        commissions[msg.sender] = 0;
         msg.sender.transfer(value);
 
         return true;

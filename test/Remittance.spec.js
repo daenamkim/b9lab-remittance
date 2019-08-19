@@ -38,40 +38,6 @@ contract('Remittance', accounts => {
     );
   });
 
-  it('should avoid a owner withdraw commissions collected when the owner candidate is requested', async () => {
-    await remittanceInstance.createRemittance(
-      '0x0000000000000000000000000000000000000000000000000000000000000001',
-      '1000',
-      {
-        from: alice,
-        value: '1001'
-      }
-    );
-    await remittanceInstance.withdrawCommissionCollected({
-      from: alice
-    });
-    const commissionCollected = await remittanceInstance.getCommissionCollected();
-    assert.strictEqual(commissionCollected.toString(), '0');
-
-    await remittanceInstance.createRemittance(
-      '0x0000000000000000000000000000000000000000000000000000000000000002',
-      '1000',
-      {
-        from: alice,
-        value: '1001'
-      }
-    );
-    await remittanceInstance.requestOwnerCandidate(ownerCandidate, {
-      from: alice
-    });
-    await truffleAssert.fails(
-      remittanceInstance.withdrawCommissionCollected({
-        from: alice
-      }),
-      'Only owner candidate was not requested'
-    );
-  });
-
   it('should avoid all users to writing to storage when it is paused', async () => {
     remittanceInstance.pause({
       from: alice
@@ -136,21 +102,6 @@ contract('Remittance', accounts => {
         from: alice
       }),
       'Should not be killed'
-    );
-  });
-
-  it('should avoid all users not owner to access to collected commissions', async () => {
-    await truffleAssert.fails(
-      remittanceInstance.getCommissionCollected({
-        from: bob
-      }),
-      'Should be only owner'
-    );
-    await truffleAssert.fails(
-      remittanceInstance.withdrawCommissionCollected({
-        from: bob
-      }),
-      'Should be only owner'
     );
   });
 
