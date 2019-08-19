@@ -10,16 +10,6 @@ contract('Remittance', accounts => {
     remittanceInstance = await Remittance.new({ from: alice });
   });
 
-  it('should return a hash', async () => {
-    const expected =
-      '0x402864001b206052188a4298cafde0220f3bc7964305ed5ea01acfaa3269a978';
-    const actual = await remittanceInstance.generateHash(
-      '0x0000000000000000000000000000000000000000000000000000000000000001',
-      '0x0000000000000000000000000000000000000000'
-    );
-    assert.strictEqual(actual, expected);
-  });
-
   it('should return current commission', async () => {
     const actual = await remittanceInstance.getCommission();
     assert.strictEqual(actual.toString(), '1000');
