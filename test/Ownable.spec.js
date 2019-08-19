@@ -1,12 +1,12 @@
 const truffleAssert = require('truffle-assertions');
-const artifactOwnable = artifacts.require('Ownable.sol');
+const Ownable = artifacts.require('Ownable.sol');
 
 contract('Ownable', accounts => {
   const [alice, bob, ownerCandidate] = accounts;
 
   let ownableInstance;
   beforeEach('deploy a new Ownable contract', async () => {
-    ownableInstance = await artifactOwnable.new({ from: alice });
+    ownableInstance = await Ownable.new({ from: alice });
   });
 
   it('should avoid a user not owner candidate to accept a new owner', async () => {

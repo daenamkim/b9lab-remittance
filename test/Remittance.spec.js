@@ -1,5 +1,5 @@
 const truffleAssert = require('truffle-assertions');
-const artifactRemittance = artifacts.require('Remittance.sol');
+const Remittance = artifacts.require('Remittance.sol');
 const { toBN, toWei } = web3.utils;
 
 contract('Remittance', accounts => {
@@ -7,7 +7,7 @@ contract('Remittance', accounts => {
 
   let remittanceInstance;
   beforeEach('deploy a new Remittance contract', async () => {
-    remittanceInstance = await artifactRemittance.new({ from: alice });
+    remittanceInstance = await Remittance.new({ from: alice });
   });
 
   it('should return a hash', async () => {
