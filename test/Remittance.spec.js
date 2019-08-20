@@ -164,10 +164,14 @@ contract('Remittance', accounts => {
       '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f',
       '1000',
       {
-        from: alice,
+        from: bob,
         value: toWei('1', 'ether')
       }
     );
+
+    const commission = await remittanceInstance.getCommission();
+    let commissionCollected = await remittanceInstance.commissions(alice);
+    assert.strictEqual(commissionCollected.toString(), commission.toString());
 
     const balanceAliceBefore = await web3.eth.getBalance(alice);
     const resultWithdraw = await remittanceInstance.withdrawCommissionCollected(
@@ -182,11 +186,23 @@ contract('Remittance', accounts => {
     assert.strictEqual(resultWithdraw.logs[0].args.owner, alice);
     assert.strictEqual(
       resultWithdraw.logs[0].args.commissionCollected.toString(),
-      '1000'
+      commission.toString()
     );
 
+    const gasPrice = await web3.eth.getGasPrice();
+    const gasAmount = toBN(resultWithdraw.receipt.gasUsed).mul(toBN(gasPrice));
     const balanceAliceAfter = await web3.eth.getBalance(alice);
     assert.isTrue(toBN(balanceAliceAfter).gt(balanceAliceBefore));
+    assert.strictEqual(
+      toBN(balanceAliceAfter).toString(),
+      toBN(balanceAliceBefore)
+        .add(commission)
+        .sub(gasAmount)
+        .toString()
+    );
+
+    commissionCollected = await remittanceInstance.commissions(alice);
+    assert.strictEqual(commissionCollected.toString(), '0');
 
     await truffleAssert.fails(
       remittanceInstance.withdrawCommissionCollected({
