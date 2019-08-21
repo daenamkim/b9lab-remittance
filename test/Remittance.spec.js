@@ -173,12 +173,10 @@ contract('Remittance', accounts => {
     let commissionCollected = await remittanceInstance.commissions(alice);
     assert.strictEqual(commissionCollected.toString(), commission.toString());
 
-    const gasPrice = '20000000000';
     const balanceAliceBefore = await web3.eth.getBalance(alice);
     const resultWithdraw = await remittanceInstance.withdrawCommissionCollected(
       {
-        from: alice,
-        gasPrice
+        from: alice
       }
     );
     assert.strictEqual(
@@ -191,6 +189,9 @@ contract('Remittance', accounts => {
       commission.toString()
     );
 
+    const { gasPrice } = await web3.eth.getTransaction(
+      resultWithdraw.receipt.transactionHash
+    );
     const gasAmount = toBN(resultWithdraw.receipt.gasUsed).mul(toBN(gasPrice));
     const balanceAliceAfter = await web3.eth.getBalance(alice);
     assert.strictEqual(
@@ -268,13 +269,11 @@ contract('Remittance', accounts => {
       }, 1000);
     });
 
-    const gasPrice = '20000000000';
     const balanceAliceBefore = await web3.eth.getBalance(alice);
     const resultRefund = await remittanceInstance.refund(
       '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f',
       {
-        from: alice,
-        gasPrice
+        from: alice
       }
     );
     assert.strictEqual(resultRefund.logs[0].event, 'LogRefunded');
@@ -284,6 +283,9 @@ contract('Remittance', accounts => {
       ether.sub(commission).toString()
     );
 
+    const { gasPrice } = await web3.eth.getTransaction(
+      resultRefund.receipt.transactionHash
+    );
     const gasAmount = toBN(resultRefund.receipt.gasUsed).mul(toBN(gasPrice));
     const balanceAliceAfter = await web3.eth.getBalance(alice);
     assert.strictEqual(
