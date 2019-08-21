@@ -173,10 +173,12 @@ contract('Remittance', accounts => {
     let commissionCollected = await remittanceInstance.commissions(alice);
     assert.strictEqual(commissionCollected.toString(), commission.toString());
 
+    const gasPrice = '20000000000';
     const balanceAliceBefore = await web3.eth.getBalance(alice);
     const resultWithdraw = await remittanceInstance.withdrawCommissionCollected(
       {
-        from: alice
+        from: alice,
+        gasPrice
       }
     );
     assert.strictEqual(
@@ -189,10 +191,8 @@ contract('Remittance', accounts => {
       commission.toString()
     );
 
-    const gasPrice = await web3.eth.getGasPrice();
     const gasAmount = toBN(resultWithdraw.receipt.gasUsed).mul(toBN(gasPrice));
     const balanceAliceAfter = await web3.eth.getBalance(alice);
-    assert.isTrue(toBN(balanceAliceAfter).gt(balanceAliceBefore));
     assert.strictEqual(
       toBN(balanceAliceAfter).toString(),
       toBN(balanceAliceBefore)
@@ -252,12 +252,13 @@ contract('Remittance', accounts => {
 
   it('should refund deposited successfully', async () => {
     const commission = await remittanceInstance.getCommission();
+    const ether = toBN(toWei('1', 'ether'));
     await remittanceInstance.createRemittance(
       '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f',
       '0',
       {
         from: alice,
-        value: toWei('1', 'ether')
+        value: ether
       }
     );
 
@@ -267,24 +268,32 @@ contract('Remittance', accounts => {
       }, 1000);
     });
 
+    const gasPrice = '20000000000';
     const balanceAliceBefore = await web3.eth.getBalance(alice);
     const resultRefund = await remittanceInstance.refund(
       '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f',
       {
-        from: alice
+        from: alice,
+        gasPrice
       }
     );
     assert.strictEqual(resultRefund.logs[0].event, 'LogRefunded');
     assert.strictEqual(resultRefund.logs[0].args.recipient, alice);
     assert.strictEqual(
       resultRefund.logs[0].args.value.toString(),
-      toBN(toWei('1', 'ether'))
-        .sub(commission)
-        .toString()
+      ether.sub(commission).toString()
     );
 
+    const gasAmount = toBN(resultRefund.receipt.gasUsed).mul(toBN(gasPrice));
     const balanceAliceAfter = await web3.eth.getBalance(alice);
-    assert.isTrue(toBN(balanceAliceAfter).gt(balanceAliceBefore));
+    assert.strictEqual(
+      toBN(balanceAliceAfter).toString(),
+      toBN(balanceAliceBefore)
+        .add(ether)
+        .sub(commission)
+        .sub(gasAmount)
+        .toString()
+    );
 
     await truffleAssert.fails(
       remittanceInstance.refund(
