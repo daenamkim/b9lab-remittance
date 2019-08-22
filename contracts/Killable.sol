@@ -3,18 +3,18 @@ pragma solidity 0.5.10;
 import './Pausable.sol';
 
 contract Killable is Pausable {
-    bool public killed;
+    bool private _killed;
 
     event LogKilled(address killedBy);
 
     modifier whenNotKilled() {
-        require(!killed, "Should not be killed");
+        require(!_killed, "Should not be killed");
 
         _;
     }
 
-    function kill() public onlyOwner whenNotKilled {
-        killed = true;
+    function kill() public onlyOwner whenPaused whenNotKilled {
+        _killed = true;
 
         emit LogKilled(msg.sender);
     }

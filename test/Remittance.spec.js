@@ -39,7 +39,7 @@ contract('Remittance', accounts => {
   });
 
   it('should avoid all users to writing to storage when it is paused', async () => {
-    remittanceInstance.pause({
+    await remittanceInstance.pause({
       from: alice
     });
     await truffleAssert.fails(
@@ -73,10 +73,23 @@ contract('Remittance', accounts => {
     );
   });
 
+  it('should avoid for a owner to kill a contract before paused', async () => {
+    await truffleAssert.fails(
+      remittanceInstance.kill({ from: alice }),
+      'Should be paused'
+    );
+  });
+
   it('should avoid all users and owner to write to storage when it is killed', async () => {
-    remittanceInstance.kill({
-      from: alice
-    });
+    const resultPause = await remittanceInstance.pause({ from: alice });
+    assert.strictEqual(resultPause.logs[0].event, 'LogPaused');
+    assert.strictEqual(resultPause.logs[0].args.owner, alice);
+
+    const resultKill = await remittanceInstance.kill({ from: alice });
+    assert.strictEqual(resultKill.logs[0].event, 'LogKilled');
+    assert.strictEqual(resultKill.logs[0].args.killedBy, alice);
+
+    await remittanceInstance.unpause({ from: alice });
     await truffleAssert.fails(
       remittanceInstance.createRemittance(
         '0x87b179583f559e625fb9cf098c1a6210384660fa34a282f7649b43ed25f1fe2f',
