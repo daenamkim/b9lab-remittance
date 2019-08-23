@@ -6,6 +6,8 @@ This is the second project of B9lab, BLOCKSTARS-ETH-2. 🎉🎉
 
 ### Basic
 
+You will create a smart contract named `Remittance` whereby:
+
 - there are three people: Alice, Bob & Carol.
 - Alice wants to send funds to Bob, but she only has ether & Bob does not care about Ethereum and wants to be paid in local currency.
 - luckily, Carol runs an exchange shop that converts ether to local currency.
@@ -26,3 +28,23 @@ The steps involved in the operation are as follows:
 - Alice is notified that the transaction went through.
 
 Since they each have only half of the puzzle, Bob & Carol need to meet in person so they can supply both passwords to the contract. This is a security measure. It may help to understand this use-case as similar to a 2-factor authentication.
+
+Stretch goals:
+
+- did you implement the basic specs airtight, without any exploit, before ploughing through the stretch goals?
+- add a deadline, after which Alice can claim back the unchallenged Ether
+- add a limit to how far in the future the deadline can be
+- add a kill switch to the whole contract
+- plug a security hole (which one?) by changing one password to the recipient's address
+- make the contract a utility that can be used by David, Emma and anybody with an address
+- make you, the owner of the contract, take a cut of the Ethers. How much? Your call. Perhaps smaller than what it would cost Alice to deploy the same contract herself
+- did you degrade safety in the name of adding features?
+
+### Development
+
+Install all packages you need for development and test.
+
+```sh
+$ yarn
+$ yarn test
+```

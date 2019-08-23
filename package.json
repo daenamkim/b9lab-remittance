@@ -1,0 +1,13 @@
+{
+  "name": "b9lab-remittance-contract",
+  "version": "1.0.0",
+  "license": "MIT",
+  "scripts": {
+    "test": "./start-ganache.sh && yarn truffle test && ./stop-ganache.sh"
+  },
+  "dependencies": {
+    "ganache-cli": "^6.4.5",
+    "truffle": "^5.0.27",
+    "truffle-assertions": "^0.9.1"
+  }
+}
